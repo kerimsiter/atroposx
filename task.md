@@ -1,632 +1,599 @@
-Anladım, "olana kadar devam"! Bu kararlılığın projenin kalitesini en üst seviyeye taşıyacak. Önceki tasarım beklentini karşılamadığı için tekrar özür dilerim. Şimdi, tüm geri bildirimlerini dikkate alarak **Atropos**'un UI/UX'ini "kalıpların dışında, modern, sade, şık ve göze güzel gözüken kurumsal" bir seviyeye taşıyacağız.
+Harika! Görev 6'yı başarıyla tamamladın ve `Branch` modülü backend'de tam fonksiyonel hale geldi. `PrismaService` bağımlılık sorununu çözmen ve global bir `PrismaModule` oluşturman da takdire şayan bir mimari iyileştirme oldu.
 
-Bu adımları dikkatlice uygulayalım:
+Şimdi sıra, backend'de hazır olan bu `Branch` modülünü frontend'e taşımaya ve kullanıcıların şube verilerini yönetebileceği modern bir arayüz oluşturmaya geldi.
 
 ---
 
-### Görev 5: Ana Uygulama Düzeni ve Çoklu Şube Yönetimi Arayüzü (Premium UI/UX Odaklı Revizyon)
+### Görev 7: Frontend `BranchesPage`'i Geliştirme (Şube Yönetimi Arayüzü)
 
-Bu revize edilmiş görevde, mevcut **React Router** ve **NestJS backend** yapısını koruyarak, odak noktamızı tamamen **Chakra UI** kullanarak "Atropos" için özel, göz alıcı ve dokunmatik ekranlara uygun bir kullanıcı arayüzü oluşturmaya çeviriyoruz.
+Bu görevde, NestJS backend'indeki `Branch` API'larını kullanarak `BranchesPage`'i gerçek veriyle dolduracağız. Kullanıcıların şubeleri listeleyebileceği, yeni şube ekleyebileceği, mevcut şubeleri düzenleyebileceği ve silebileceği işlevselliği ekleyeceğiz.
 
-**Adım 5.1: Tema Renklerini ve Global Stilleri İyileştirme**
+**Önkoşullar:**
 
-Daha sade ve kurumsal bir görünüm için `atropos` renk paletini ve global stilleri biraz daha rafine edeceğiz.
+*   `React Hook Form` ve `Zod` (veya `yup`, `class-validator`) ile form validasyonu yapacağız. `class-validator` zaten backend'de kullanıldığı için frontend'de de `class-validator` ve `class-transformer`'ı kullanmak mantıklı.
 
-**`atropos/src/frontend/src/theme/index.ts` (Güncellenmiş):**
+    ```cmd
+    cd src\frontend
+    pnpm add react-hook-form @hookform/resolvers class-validator class-transformer
+    ```
+
+**Adım 7.1: `BranchesPage`'de Şube Listesini Görüntüleme**
+
+`BranchesPage.tsx`'i güncelleyerek şubeleri API'dan çekip bir tabloda görüntüleyelim.
+
+**`atropos/src/frontend/src/pages/BranchesPage.tsx` (Güncellenmiş):**
 ```typescript
-import { extendTheme, type ThemeConfig } from '@chakra-ui/react';
-import { mode } from '@chakra-ui/theme-tools'; // mode fonksiyonunu kullanmak için eklendi
-
-const config: ThemeConfig = {
-  initialColorMode: 'system',
-  useSystemColorMode: true,
-};
-
-const theme = extendTheme({
-  config,
-  colors: {
-    // Chakra UI'ın varsayılan renklerini kullanabiliriz
-    // veya kendi kurumsal paletimizi daha minimalist tanımlayabiliriz.
-    // Şimdilik varsayılan gri tonları ve teal/purple gibi vurguları kullanacağız.
-    // Daha sonra markana özel renkleri buraya daha dikkatli yerleştirebiliriz.
-    atropos: { // Özel Atropos vurgu renkleri
-      50: '#E0F2F7', // Çok açık mavi-yeşil
-      100: '#B2EBF2',
-      200: '#80DEEA',
-      300: '#4DD0E1',
-      400: '#26C6DA',
-      500: '#00BCD4', // Ana vurgu rengi (turkuaz benzeri)
-      600: '#00ACC1',
-      700: '#0097A7',
-      800: '#00838F',
-      900: '#006064', // Koyu turkuaz
-    },
-    // Menü ikon renkleri için bazı tanımlamalar yapalım
-    menuIcons: {
-      sales: '#E53E3E',       // Kırmızımsı
-      cashRegister: '#3182CE',  // Mavimsi
-      products: '#38A169',    // Yeşilsi
-      stocks: '#D69E2E',      // Turuncumsu
-      customers: '#805AD5',   // Morumsu
-      reports: '#319795',     // Turkuaz (atropos ile aynı olabilir)
-      branches: '#C05621',    // Kahverengimsi
-      settings: '#4A5568',    // Krivazı gri
-    }
-  },
-  fonts: {
-    body: `'Inter', sans-serif`, // Daha modern bir font (Google Fonts'tan import etmemiz gerekebilir)
-    heading: `'Inter', sans-serif`,
-  },
-  components: {
-    Button: {
-      baseStyle: {
-        fontWeight: 'semibold', // Daha az kalın
-        borderRadius: 'md',
-      },
-      variants: {
-        solid: (props: any) => ({
-          bg: mode('atropos.500', 'atropos.400')(props), // Tema geçişine duyarlı
-          color: 'white',
-          _hover: {
-            bg: mode('atropos.600', 'atropos.500')(props),
-          },
-        }),
-        outline: (props: any) => ({
-          borderColor: mode('gray.300', 'gray.600')(props),
-          color: mode('gray.800', 'whiteAlpha.800')(props),
-          _hover: {
-            bg: mode('gray.100', 'gray.700')(props),
-          },
-        }),
-      },
-    },
-    // Card benzeri kutular için genel stil
-    Card: { // Özel bir bileşen olarak kullanacağız
-      baseStyle: (props: any) => ({
-        p: 6,
-        borderRadius: 'lg',
-        shadow: mode('sm', 'dark-lg')(props), // Daha zarif gölgeler
-        bg: mode('white', 'gray.700')(props),
-        transition: 'all 0.2s ease-in-out',
-        _hover: {
-          transform: 'translateY(-3px)',
-          shadow: mode('md', 'dark-xl')(props),
-        },
-      }),
-    },
-  },
-  styles: {
-    global: (props: any) => ({
-      body: {
-        fontFamily: 'body',
-        color: mode('gray.800', 'whiteAlpha.900')(props),
-        bg: mode('gray.50', 'gray.800')(props), // Arka plan için daha açık gri veya koyu gri
-        lineHeight: 'base',
-      },
-      // Kaydırma çubuğunu gizleyip stil vermek için (isteğe bağlı)
-      '::-webkit-scrollbar': {
-        width: '8px',
-      },
-      '::-webkit-scrollbar-track': {
-        background: mode('gray.100', 'gray.700')(props),
-      },
-      '::-webkit-scrollbar-thumb': {
-        background: mode('gray.300', 'gray.600')(props),
-        borderRadius: '4px',
-      },
-      '::-webkit-scrollbar-thumb:hover': {
-        background: mode('gray.400', 'gray.500')(props),
-      },
-    }),
-  },
-});
-
-export default theme;
-```
-**`theme-tools`** paketini kurmanız gerekebilir:
-```bash
-pnpm add @chakra-ui/theme-tools
-```
-**Google Fonts için `index.html`'e ekleme:**
-`atropos/src/frontend/index.html` dosyasına `<head>` etiketinin içine, `Inter` fontunu çekmek için aşağıdaki satırı ekleyin:
-```html
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">```
-
-**Adım 5.2: Revize Edilmiş `Header.tsx` Bileşeni**
-
-Header'ı daha sade, minimalist ve kurumsal bir görünüme sahip olacak şekilde yeniden tasarlayalım.
-
-**`atropos/src/frontend/src/components/Header.tsx` (Güncellenmiş):**
-```typescript
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Flex,
-  Text,
-  IconButton,
-  HStack,
-  Spacer,
-  useColorMode,
-  useColorModeValue,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Button, // MenuButton için kullanılıyor
-} from '@chakra-ui/react';
-import { SettingsIcon, SunIcon, MoonIcon, ChevronDownIcon } from '@chakra-ui/icons';
-import React from 'react';
-
-const Header: React.FC = () => {
-  const { colorMode, toggleColorMode } = useColorMode();
-  const bgColor = useColorModeValue('white', 'gray.700'); // Header arka planı beyaz veya koyu gri
-  const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
-
-  const currentBranchName = "Ana Şube"; // TODO: Dinamik hale getirilecek
-  const currentUserName = "Oğuzhan A."; // TODO: Dinamik hale getirilecek
-  const appName = "Atropos POS System";
-
-  return (
-    <Flex
-      as="header"
-      width="100%"
-      p={4}
-      bg={bgColor}
-      color={textColor}
-      borderBottomWidth="1px"
-      borderColor={useColorModeValue('gray.200', 'gray.600')}
-      align="center"
-      justify="space-between"
-      boxShadow="sm" // Hafif bir gölge
-    >
-      {/* Sol Kısım: Logo ve Uygulama Adı */}
-      <HStack spacing={2} ml={2}> {/* Hafifçe sola çek */}
-        <Box fontSize="3xl" color="atropos.500" fontWeight="bold">⚡</Box> {/* Atropos rengi */}
-        <Text fontSize="xl" fontWeight="bold" fontFamily="heading">{appName}</Text> {/* Daha belirgin font */}
-      </HStack>
-
-      <Spacer />
-
-      {/* Sağ Kısım: Şube, Kullanıcı, Tema ve Ayarlar */}
-      <HStack spacing={3} mr={2}> {/* Hafifçe sağa çek */}
-        {/* Şube Seçimi */}
-        <Menu>
-          <MenuButton
-            as={Button}
-            rightIcon={<ChevronDownIcon />}
-            variant="ghost" // Daha sade
-            size="sm"
-            fontWeight="normal" // Daha ince font
-          >
-            {currentBranchName}
-          </MenuButton>
-          <MenuList bg={bgColor} borderColor={useColorModeValue('gray.200', 'gray.600')}>
-            <MenuItem _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}>Şube 1</MenuItem>
-            <MenuItem _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}>Şube 2</MenuItem>
-          </MenuList>
-        </Menu>
-
-        {/* Kullanıcı Bilgisi */}
-        <Menu>
-          <MenuButton
-            as={Button}
-            rightIcon={<ChevronDownIcon />}
-            variant="ghost" // Daha sade
-            size="sm"
-            fontWeight="normal" // Daha ince font
-          >
-            {currentUserName}
-          </MenuButton>
-          <MenuList bg={bgColor} borderColor={useColorModeValue('gray.200', 'gray.600')}>
-            <MenuItem _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}>Profil</MenuItem>
-            <MenuItem _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}>Çıkış Yap</MenuItem>
-          </MenuList>
-        </Menu>
-
-        {/* Tema Geçiş Butonu */}
-        <IconButton
-          aria-label="Toggle color mode"
-          icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
-          onClick={toggleColorMode}
-          size="sm"
-          isRound
-          variant="ghost" // Daha sade
-        />
-
-        {/* Ayarlar Butonu */}
-        <IconButton
-          aria-label="Settings"
-          icon={<SettingsIcon />}
-          size="sm"
-          isRound
-          variant="ghost" // Daha sade
-          onClick={() => console.log('Ayarlar açılıyor...')}
-        />
-      </HStack>
-    </Flex>
-  );
-};
-
-export default Header;
-```
-
-**Adım 5.3: Revize Edilmiş `Dashboard.tsx` Bileşeni**
-
-Ana menü/dashboard'u daha sade, şık kartlar ve daha düzenli bir sol panel ile yeniden tasarlayalım. `Versions` bileşenini Dashboard'dan çıkarıp `App.tsx`'e geri alacağız, böylece ana statü ekranında kalır ve Dashboard temiz kalır.
-
-**`atropos/src/frontend/src/pages/Dashboard.tsx` (Güncellenmiş):**
-```typescript
-import {
-  Box,
+  Heading,
   Text,
   VStack,
-  HStack,
-  SimpleGrid,
-  Icon,
-  Button,
   useColorModeValue,
-  Flex,
-} from '@chakra-ui/react';
-import React, { useState, useEffect } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
-import { FaShoppingCart, FaCashRegister, FaUtensils, FaBoxes, FaUsers, FaChartLine, FaStoreAlt, FaCog, FaLock, FaWifi, FaServer } from 'react-icons/fa'; // İkonlar için
-import { HiOutlineDocumentText } from 'react-icons/hi'; // Başka bir ikon kütüphanesi
-import { BiRestaurant } from 'react-icons/bi'; // Restoran ikonu
-import { MdOutlineFastfood } from 'react-icons/md'; // Fast food ikonu
-
-// Navigasyon kartları için veri
-const menuItems = [
-  { id: 'sales', name: 'SATIŞLAR', icon: FaShoppingCart, path: '/sales', colorKey: 'menuIcons.sales' },
-  { id: 'cash-register', name: 'KASA', icon: FaCashRegister, path: '/cash-register', colorKey: 'menuIcons.cashRegister' },
-  { id: 'products', name: 'ÜRÜNLER', icon: FaUtensils, path: '/products', colorKey: 'menuIcons.products' },
-  { id: 'stocks', name: 'STOKLAR', icon: FaBoxes, path: '/stocks', colorKey: 'menuIcons.stocks' },
-  { id: 'customers', name: 'CARİLER', icon: FaUsers, path: '/customers', colorKey: 'menuIcons.customers' },
-  { id: 'reports', name: 'RAPORLAR', icon: FaChartLine, path: '/reports', colorKey: 'menuIcons.reports' },
-  { id: 'branches', name: 'ŞUBELER', icon: FaStoreAlt, path: '/branches', colorKey: 'menuIcons.branches' },
-  { id: 'settings', name: 'AYARLAR', icon: FaCog, path: '/settings', colorKey: 'menuIcons.settings' },
-];
-
-const Dashboard: React.FC = () => {
-  const cardBgColor = useColorModeValue('white', 'gray.700');
-  const cardHoverBgColor = useColorModeValue('gray.50', 'gray.600');
-  const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
-  const subTextColor = useColorModeValue('gray.600', 'gray.400'); // Daha yumuşak alt metin rengi
-
-  const [currentDateTime, setCurrentDateTime] = useState(new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentDateTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formatDate = (date: Date) => {
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    };
-    return date.toLocaleDateString('tr-TR', options);
-  };
-
-  const formatTime = (date: Date) => {
-    const options: Intl.DateTimeFormatOptions = {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    };
-    return date.toLocaleTimeString('tr-TR', options);
-  };
-
-  const NotificationCard: React.FC<{ type: string; time: string; colorScheme: string }> = ({ type, time, colorScheme }) => (
-    <Box
-      p={3}
-      bg={useColorModeValue(`${colorScheme}.50`, `${colorScheme}.800`)}
-      borderRadius="md"
-      width="100%"
-      boxShadow="sm"
-      _hover={{ boxShadow: 'md', transform: 'translateY(-1px)' }}
-      transition="all 0.2s ease-in-out"
-    >
-      <Text fontSize="sm" fontWeight="medium" color={useColorModeValue(`${colorScheme}.800`, `${colorScheme}.100`)}>
-        Yeni online sipariş! {type}
-      </Text>
-      <Text fontSize="xs" color={useColorModeValue(`${colorScheme}.600`, `${colorScheme}.300`)}>
-        {time}
-      </Text>
-    </Box>
-  );
-
-  return (
-    <Flex height="calc(100vh - 68px)" p={6} bg={useColorModeValue('gray.50', 'gray.800')}>
-      {/* Sol Panel: Tarih, Saat, Bildirimler ve Durumlar */}
-      <VStack
-        width={{ base: '100%', md: '300px' }} // Sabit, daha şık genişlik
-        minWidth="280px"
-        p={6}
-        spacing={8}
-        align="flex-start"
-        bg={useColorModeValue('white', 'gray.700')}
-        borderRadius="xl" // Daha yumuşak köşeler
-        shadow="xl" // Daha belirgin gölge
-        mr={6}
-        display={{ base: 'none', md: 'flex' }}
-        flexShrink={0} // Küçülmeyi engelle
-      >
-        <VStack align="flex-start" spacing={1} width="100%">
-          <Text fontSize="xl" fontWeight="medium" color={textColor}>
-            {formatDate(currentDateTime)}
-          </Text>
-          <Text fontSize="5xl" fontWeight="extrabold" color={textColor} lineHeight="1.1">
-            {formatTime(currentDateTime)}
-          </Text>
-        </VStack>
-
-        {/* Bildirimler */}
-        <VStack align="flex-start" spacing={3} width="100%">
-          <Text fontSize="lg" fontWeight="semibold" color={textColor}>BİLDİRİMLER</Text>
-          <NotificationCard type="Getir" time="15:27" colorScheme="blue" />
-          <NotificationCard type="Trendyol" time="15:32" colorScheme="green" />
-          <NotificationCard type="Yemek Sepeti" time="15:41" colorScheme="purple" />
-          <Button variant="link" colorScheme="atropos" size="sm" mt={2} alignSelf="flex-end" fontWeight="normal">
-            Tüm bildirimleri göster →
-          </Button>
-        </VStack>
-
-        <Spacer /> {/* Durum çubuklarını aşağı it */}
-
-        {/* Bağlantı Durumları */}
-        <VStack align="flex-start" spacing={2} width="100%" color={subTextColor}>
-          <HStack>
-            <Icon as={FaWifi} color="green.500" />
-            <Text fontSize="sm">İnternet: Bağlı</Text>
-          </HStack>
-          <HStack>
-            <Icon as={FaServer} color="green.500" />
-            <Text fontSize="sm">Sunucu: Bağlı</Text>
-          </HStack>
-        </VStack>
-
-        {/* Müşteri Hizmetleri ve Ayarlar */}
-        <HStack width="100%" justifyContent="space-between" pt={4} borderTopWidth="1px" borderColor={useColorModeValue('gray.100', 'gray.600')}>
-          <Button variant="ghost" colorScheme="gray" leftIcon={<Icon as={HiOutlineDocumentText} />} size="sm" fontWeight="normal">
-            Müşteri Hizmetleri
-          </Button>
-          <Button variant="ghost" colorScheme="gray" leftIcon={<Icon as={FaLock} />} size="sm" fontWeight="normal">
-            Kilit
-          </Button>
-        </HStack>
-
-        <Text fontSize="xs" color="gray.500" alignSelf="center" mt={2}>
-          Atropos POS v1.0
-        </Text>
-      </VStack>
-
-      {/* Sağ Panel: Ana Menü Kartları */}
-      <SimpleGrid
-        flex="1"
-        columns={{ base: 2, sm: 2, md: 3, lg: 4 }} // Dokunmatik ekranlar için yeterli büyüklük
-        spacing={6} // Kartlar arası boşluk
-        p={6}
-        borderRadius="xl"
-        shadow="xl" // Sol panel ile uyumlu gölge
-        bg={useColorModeValue('white', 'gray.700')}
-        ml={{ base: 0, md: 6 }} // Mobil cihazlarda sol paneli gizlediğimiz için margin kaldırılır
-      >
-        {menuItems.map((item) => (
-          <Box
-            as={RouterLink}
-            to={item.path}
-            key={item.id}
-            sx={{
-                ...theme.components.Card.baseStyle(useColorModeValue({},{})), // Tema'dan Card stilini kullan
-                display: 'flex', // Box'ı esnek kutu yap
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                textAlign: 'center',
-                minHeight: '160px', // Dokunmatik için uygun yükseklik
-                cursor: 'pointer',
-                _hover: theme.components.Card.baseStyle(useColorModeValue({},{}))._hover, // Hover efektlerini de al
-            }}
-            _active={{
-              transform: 'scale(0.98)', // Basıldığında hafif küçülme
-            }}
-          >
-            <Icon as={item.icon} boxSize={14} color={item.colorKey} mb={3} /> {/* Büyük ikon */}
-            <Text fontSize="xl" fontWeight="bold" color={textColor}>{item.name}</Text> {/* Büyük ve kalın metin */}
-          </Box>
-        ))}
-      </SimpleGrid>
-    </Flex>
-  );
-};
-
-export default Dashboard;
-```
-**Yeni Bağımlılıklar (ikonlar için):**
-`react-icons` paketine ek olarak birkaç ikon kütüphanesi daha ekledim.
-```bash
-pnpm add react-icons @chakra-ui/icons```
-
-**Adım 5.4: `App.tsx`'i Güncelleme ve Routing Yapısını Koruma**
-
-`App.tsx`'i yeniden düzenleyerek `Versions` bileşenini tekrar buraya alalım, böylece dashboard daha temiz kalır ve genel app seviyesi bilgiler App.tsx'te olur. Ayrıca backend bağlantı kontrolünü de buraya geri taşıyabiliriz, böylece uygulamanın ana yükleme ekranı olarak da kullanılabilir.
-
-**`atropos/src/frontend/src/App.tsx` (Güncellenmiş):**
-```typescript
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import BranchesPage from './pages/BranchesPage';
-import {
-  Box,
-  Text,
-  VStack,
-  HStack,
   Spinner,
   Alert,
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  useColorModeValue,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
+  Button,
+  HStack,
+  useDisclosure, // Modal yönetimi için
 } from '@chakra-ui/react';
+import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import BranchFormModal from '../components/BranchFormModal'; // Form modal bileşeni
 
-// Versions bileşeni artık App.tsx içinde
-const Versions: React.FC = () => {
-  const [versions, setVersions] = useState<{ [key: string]: string } | null>(null);
-  const textColor = useColorModeValue('gray.600', 'gray.400');
+interface Branch {
+  id: string;
+  companyId: string;
+  code: string;
+  name: string;
+  address: string;
+  phone: string;
+  email?: string;
+  isMainBranch: boolean;
+  active: boolean;
+  // Diğer alanlar...
+}
 
-  useEffect(() => {
-    if (window.electron && window.electron.process && window.electron.ipcRenderer) {
-      const getVersions = async () => {
-        try {
-          const chrome = await window.electron.ipcRenderer.invoke('get-chrome-version');
-          const electron = await window.electron.ipcRenderer.invoke('get-electron-version');
-          const node = await window.electron.ipcRenderer.invoke('get-node-version');
-          setVersions({ chrome, electron, node });
-        } catch (error) {
-          console.error("Failed to get versions from main process:", error);
-        }
-      };
-      getVersions();
-    }
-  }, []);
-
-  return (
-    <HStack spacing={4} fontSize="sm" color={textColor} mt={4}>
-      {versions ? (
-        <>
-          <Text>Electron v{versions.electron}</Text>
-          <Text>Chromium v{versions.chrome}</Text>
-          <Text>Node v{versions.node}</Text>
-        </>
-      ) : (
-        <Text>Sürümler yükleniyor...</Text>
-      )}
-    </HStack>
-  );
-};
-
-
-function App(): React.JSX.Element {
-  const [backendUrl, setBackendUrl] = useState<string | null>(null);
-  const [companies, setCompanies] = useState<any[]>([]); // Sadece bağlantı testi için
-  const [statusMessage, setStatusMessage] = useState('Backend API URL alınıyor...');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
-  const bgColor = useColorModeValue('gray.50', 'gray.900');
+const BranchesPage: React.FC = () => {
+  const bgColor = useColorModeValue('white', 'gray.700');
+  const pageBgColor = useColorModeValue('gray.50', 'gray.800');
   const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
 
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [companyId, setCompanyId] = useState<string | null>(null); // Kullanıcıya ait companyId
+  const { isOpen, onOpen, onClose } = useDisclosure(); // Modal durumu
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null); // Düzenlenecek şube
+
+  // TODO: Bu companyId gerçek bir kullanıcı girişi veya seçimi ile dinamikleşmeli.
+  // Şimdilik App.tsx'ten çekilen ilk şirketin ID'sini kullanabiliriz,
+  // veya manuel bir test ID'si atayabiliriz.
+  // İleride auth eklenince login sonrası kullanıcıdan alınacak.
   useEffect(() => {
-    window.api.getNestApiUrl().then((url) => {
-      setBackendUrl(url);
-      setStatusMessage(`NestJS API URL: ${url}`);
-    }).catch((err) => {
-      setStatusMessage(`API URL alınamadı: ${err.message}`);
-      console.error(err);
-      setIsLoading(false);
-      setIsError(true);
+    // App.tsx'ten gelen şirket ID'sini almayı simüle edelim
+    window.api.getNestApiUrl().then(async (backendUrl) => {
+      try {
+        const response = await fetch(`${backendUrl}/company`);
+        const companies = await response.json();
+        if (companies && companies.length > 0) {
+          setCompanyId(companies[0].id); // İlk bulunan şirketin ID'sini kullan
+        } else {
+          setError('Sistemde kayıtlı şirket bulunamadı. Lütfen önce bir şirket oluşturun.');
+          setIsLoading(false);
+        }
+      } catch (err: any) {
+        setError(`Şirket ID alınamadı: ${err.message}`);
+        setIsLoading(false);
+      }
     });
   }, []);
 
-  useEffect(() => {
-    if (backendUrl) {
-      const fetchCompanies = async () => {
-        try {
-          const response = await fetch(`${backendUrl}/company`);
-          if (!response.ok) {
-            throw new Error(`HTTP hatası! Durum: ${response.status}`);
-          }
-          const data = await response.json();
-          setCompanies(data);
-          setStatusMessage('Backend bağlantısı başarılı! Şirketler yüklendi.');
-          setIsLoading(false);
-          setIsError(false);
-        } catch (error: any) {
-          setStatusMessage(`Backend bağlantı hatası: ${error.message}`);
-          console.error('Şirketler çekilirken hata oluştu:', error);
-          setIsLoading(false);
-          setIsError(true);
-        }
-      };
-      setTimeout(fetchCompanies, 2000);
+
+  const fetchBranches = useCallback(async () => {
+    if (!companyId) return; // companyId yoksa çekme
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const backendUrl = await window.api.getNestApiUrl();
+      const response = await fetch(`${backendUrl}/branches?companyId=${companyId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP hatası! Durum: ${response.status}`);
+      }
+      const data = await response.json();
+      setBranches(data);
+    } catch (err: any) {
+      setError(`Şubeler çekilirken hata oluştu: ${err.message}`);
+      console.error(err);
+    } finally {
+      setIsLoading(false);
     }
-  }, [backendUrl]);
+  }, [companyId]);
 
+  useEffect(() => {
+    fetchBranches();
+  }, [fetchBranches]);
 
-  // Eğer backend bağlantısı hala kontrol ediliyorsa veya hata varsa yükleme ekranını göster
-  if (isLoading || isError) {
-    return (
-      <VStack p={8} spacing={6} align="center" justify="center" minH="100vh" bg={bgColor}>
-        <Box fontSize="5xl" mb={4} color="atropos.500">⚡</Box>
-        <Text fontSize="2xl" fontWeight="bold" color={textColor}>Atropos POS System</Text>
-        
-        <Box
-          p={5}
-          shadow="md"
-          borderWidth="1px"
-          borderRadius="lg"
-          bg={useColorModeValue('white', 'gray.700')}
-          color={textColor}
-          width={{ base: '90%', md: '600px' }}
-        >
-          <Text fontSize="xl" fontWeight="semibold" mb={3}>Backend Durumu</Text>
-          {isLoading ? (
-            <HStack justifyContent="center">
-              <Spinner size="md" color="atropos.500" />
-              <Text>{statusMessage}</Text>
-            </HStack>
-          ) : (
-            <Alert status="error">
-              <AlertIcon />
-              <AlertTitle mr={2}>Bağlantı Hatası!</AlertTitle>
-              <AlertDescription>{statusMessage}</AlertDescription>
-            </Alert>
-          )}
+  const handleCreateBranch = () => {
+    setSelectedBranch(null); // Yeni oluşturma modu
+    onOpen();
+  };
 
-          {companies.length > 0 && ( // Şirketleri sadece bağlantı başarılıysa göster
-            <Box mt={4}>
-              <Text fontSize="lg" fontWeight="semibold">Veritabanındaki Şirketler:</Text>
-              <VStack as="ul" align="flex-start" mt={2} spacing={1}>
-                {companies.map((company) => (
-                  <Text as="li" key={company.id}>
-                    <Text as="span" fontWeight="bold">{company.name}</Text> (Vergi No: {company.taxNumber})
-                  </Text>
-                ))}
-              </VStack>
-            </Box>
-          )}
-        </Box>
-        <Versions /> {/* Sürüm bilgileri */}
-      </VStack>
-    );
-  }
+  const handleEditBranch = (branch: Branch) => {
+    setSelectedBranch(branch); // Düzenleme modu
+    onOpen();
+  };
 
-  // Bağlantı başarılıysa ana uygulamayı göster
+  const handleDeleteBranch = async (id: string) => {
+    if (!window.confirm('Bu şubeyi silmek istediğinizden emin misiniz?')) {
+      return;
+    }
+    setIsLoading(true); // Yükleme durumuna geç
+    try {
+      const backendUrl = await window.api.getNestApiUrl();
+      const response = await fetch(`${backendUrl}/branches/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error(`Silme hatası! Durum: ${response.status}`);
+      }
+      // Başarılı olursa listeyi yenile
+      await fetchBranches();
+    } catch (err: any) {
+      setError(`Şube silinirken hata oluştu: ${err.message}`);
+      console.error(err);
+      setIsLoading(false); // Hata durumunda yüklemeyi kapat
+    }
+  };
+
+  const handleFormSubmitSuccess = () => {
+    onClose(); // Modalı kapat
+    fetchBranches(); // Listeyi yenile
+  };
+
   return (
-    <BrowserRouter>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/branches" element={<BranchesPage />} />
-          {/* Diğer sayfalar için rotalar buraya eklenecek */}
-          {/* Hızlı Satış, Ürünler, Stoklar, Cariler, Raporlar, Ayarlar vb. */}
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <VStack p={6} align="flex-start" bg={pageBgColor} minH="calc(100vh - 68px)">
+      <Box
+        p={5}
+        shadow="md"
+        borderWidth="1px"
+        borderRadius="lg"
+        bg={bgColor}
+        color={textColor}
+        width="100%"
+      >
+        <HStack justifyContent="space-between" mb={4}>
+          <Heading size="lg">Şubeler Yönetimi</Heading>
+          <Button leftIcon={<AddIcon />} colorScheme="atropos" onClick={handleCreateBranch}>
+            Yeni Şube Ekle
+          </Button>
+        </HStack>
+
+        {error && (
+          <Alert status="error" mb={4}>
+            <AlertIcon />
+            <AlertTitle mr={2}>Hata!</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {isLoading ? (
+          <VStack w="100%" py={10}>
+            <Spinner size="xl" color="atropos.500" />
+            <Text mt={4}>Şubeler yükleniyor...</Text>
+          </VStack>
+        ) : branches.length === 0 && !error ? (
+          <Text py={10} textAlign="center" w="100%">
+            Kayıtlı şube bulunamadı. Yeni bir şube eklemek için yukarıdaki "Yeni Şube Ekle" butonunu kullanın.
+          </Text>
+        ) : (
+          <TableContainer width="100%">
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Kod</Th>
+                  <Th>Adı</Th>
+                  <Th>Adres</Th>
+                  <Th>Telefon</Th>
+                  <Th>Aktif</Th>
+                  <Th isNumeric>İşlemler</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {branches.map((branch) => (
+                  <Tr key={branch.id}>
+                    <Td>{branch.code}</Td>
+                    <Td>{branch.name}</Td>
+                    <Td>{branch.address}</Td>
+                    <Td>{branch.phone}</Td>
+                    <Td>{branch.active ? 'Evet' : 'Hayır'}</Td>
+                    <Td isNumeric>
+                      <HStack spacing={2} justifyContent="flex-end">
+                        <Button
+                          size="sm"
+                          leftIcon={<EditIcon />}
+                          onClick={() => handleEditBranch(branch)}
+                          colorScheme="blue"
+                        >
+                          Düzenle
+                        </Button>
+                        <Button
+                          size="sm"
+                          leftIcon={<DeleteIcon />}
+                          onClick={() => handleDeleteBranch(branch.id)}
+                          colorScheme="red"
+                        >
+                          Sil
+                        </Button>
+                      </HStack>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </TableContainer>
+        )}
+      </Box>
+
+      <BranchFormModal
+        isOpen={isOpen}
+        onClose={onClose}
+        branch={selectedBranch}
+        companyId={companyId}
+        onSuccess={handleFormSubmitSuccess}
+      />
+    </VStack>
   );
+};
+
+export default BranchesPage;
+```
+
+**Adım 7.2: Yeni Şube Ekleme/Düzenleme Formu için Modal Bileşeni (`BranchFormModal.tsx`)**
+
+Bu modal, hem yeni şube ekleme hem de mevcut şubeyi düzenleme için kullanılacak formu içerecek. `React Hook Form` ve `class-validator` kullanarak validasyonları yöneteceğiz.
+
+**`atropos/src/frontend/src/components/BranchFormModal.tsx`:**
+```typescript
+import React, { useEffect } from 'react';
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  Textarea,
+  Switch,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+  Alert,
+  AlertIcon,
+  useToast, // Bildirimler için
+  Select,
+  FormErrorMessage, // Validasyon hataları için
+} from '@chakra-ui/react';
+import { useForm, Controller } from 'react-hook-form';
+import { ClassConstructor, plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+import { CreateBranchDto } from '../../../../backend/src/branch/dto/create-branch.dto'; // Backend DTO'sunu kullanıyoruz
+import { UpdateBranchDto } from '../../../../backend/src/branch/dto/update-branch.dto'; // Backend DTO'sunu kullanıyoruz
+import { Branch } from '@prisma/client'; // Prisma Client tipini kullanıyoruz
+
+interface BranchFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  branch: Branch | null; // Düzenleme için mevcut şube verisi, yeni için null
+  companyId: string | null; // Şirket ID'si zorunlu
+  onSuccess: () => void; // Başarılı işlem sonrası callback
 }
 
-export default App;
+// React Hook Form için custom resolver
+const classValidatorResolver = <T extends object>(classType: ClassConstructor<T>) => {
+  return async (values: T) => {
+    const errors = await validate(plainToInstance(classType, values));
+    if (errors.length === 0) {
+      return { values, errors: {} };
+    }
+    const formattedErrors = errors.reduce((acc, error) => {
+      Object.keys(error.constraints || {}).forEach((key) => {
+        // Her alan için ilk hatayı göster
+        if (!acc[error.property]) {
+          acc[error.property] = { type: key, message: error.constraints![key] };
+        }
+      });
+      return acc;
+    }, {});
+    return { values: {}, errors: formattedErrors };
+  };
+};
+
+const BranchFormModal: React.FC<BranchFormModalProps> = ({ isOpen, onClose, branch, companyId, onSuccess }) => {
+  const toast = useToast();
+  const {
+    handleSubmit,
+    register,
+    reset,
+    formState: { errors, isSubmitting },
+    control, // Controller bileşeni için
+  } = useForm<CreateBranchDto>({
+    resolver: classValidatorResolver(branch ? UpdateBranchDto : CreateBranchDto),
+  });
+
+  useEffect(() => {
+    // Modal açıldığında veya branch değiştiğinde formu resetle
+    if (isOpen) {
+      if (branch) {
+        reset({ // Mevcut şube verileriyle doldur
+          ...branch,
+          latitude: branch.latitude || undefined,
+          longitude: branch.longitude || undefined,
+          serverPort: branch.serverPort || undefined,
+          workingDays: branch.workingDays || [],
+          // Diğer boolean ve sayısal alanları da uygun şekilde cast et
+          isMainBranch: branch.isMainBranch,
+          active: branch.active,
+        });
+      } else {
+        reset({ // Yeni şube için varsayılan değerler veya boş
+          companyId: companyId || '', // Eğer varsa companyId'yi otomatik doldur
+          code: '',
+          name: '',
+          address: '',
+          phone: '',
+          email: '',
+          latitude: undefined,
+          longitude: undefined,
+          serverIp: '',
+          serverPort: undefined,
+          isMainBranch: false,
+          openingTime: '09:00',
+          closingTime: '18:00',
+          workingDays: [1,2,3,4,5], // Pazartesi-Cuma varsayılan
+          cashRegisterId: '',
+          posTerminalId: '',
+          active: true,
+        });
+      }
+    }
+  }, [isOpen, branch, reset, companyId]);
+
+  const onSubmit = async (values: CreateBranchDto | UpdateBranchDto) => {
+    if (!companyId && !branch?.companyId) {
+        toast({
+            title: 'Hata',
+            description: 'Şirket ID bulunamadı. Şube eklemek için önce bir şirket olmalı.',
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+        });
+        return;
+    }
+
+    const payload = branch ? values : { ...values, companyId: companyId! }; // Yeni ise companyId ekle
+    const method = branch ? 'PATCH' : 'POST';
+    const url = branch
+      ? `${await window.api.getNestApiUrl()}/branches/${branch.id}`
+      : `${await window.api.getNestApiUrl()}/branches`;
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Bir hata oluştu.');
+      }
+
+      toast({
+        title: branch ? 'Şube Güncellendi' : 'Şube Eklendi',
+        description: branch ? 'Şube başarıyla güncellendi.' : 'Yeni şube başarıyla eklendi.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      onSuccess(); // Başarılı işlem sonrası listeyi yenile
+    } catch (err: any) {
+      toast({
+        title: 'İşlem Başarısız',
+        description: err.message || 'Şube işlemi sırasında bir hata oluştu.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      console.error('API Error:', err);
+    }
+  };
+
+  const weekdays = [
+    { value: 1, label: 'Pazartesi' },
+    { value: 2, label: 'Salı' },
+    { value: 3, label: 'Çarşamba' },
+    { value: 4, label: 'Perşembe' },
+    { value: 5, label: 'Cuma' },
+    { value: 6, label: 'Cumartesi' },
+    { value: 7, label: 'Pazar' },
+  ];
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>{branch ? 'Şube Düzenle' : 'Yeni Şube Ekle'}</ModalHeader>
+        <ModalCloseButton />
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <ModalBody pb={6}>
+            <VStack spacing={4}>
+              <FormControl isInvalid={!!errors.code}>
+                <FormLabel>Şube Kodu</FormLabel>
+                <Input {...register('code', { required: true })} placeholder="Örn: IST01" />
+                <FormErrorMessage>{errors.code?.message}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={!!errors.name}>
+                <FormLabel>Şube Adı</FormLabel>
+                <Input {...register('name', { required: true })} placeholder="Örn: İstanbul Ana Şube" />
+                <FormErrorMessage>{errors.name?.message}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={!!errors.address}>
+                <FormLabel>Adres</FormLabel>
+                <Textarea {...register('address', { required: true })} placeholder="Şube adresi" />
+                <FormErrorMessage>{errors.address?.message}</FormErrorMessage>
+              </FormControl>
+
+              <FormControl isInvalid={!!errors.phone}>
+                <FormLabel>Telefon</FormLabel>
+                <Input {...register('phone', { required: true })} placeholder="Örn: +905XXXXXXXXX" />
+                <FormErrorMessage>{errors.phone?.message}</FormErrorMessage>
+              </FormControl>
+              
+              <FormControl isInvalid={!!errors.email}>
+                <FormLabel>Email</FormLabel>
+                <Input type="email" {...register('email')} placeholder="Örn: info@sube.com" />
+                <FormErrorMessage>{errors.email?.message}</FormErrorMessage>
+              </FormControl>
+
+              <HStack spacing={4} width="100%">
+                <FormControl flex={1} isInvalid={!!errors.latitude}>
+                  <FormLabel>Enlem (Latitude)</FormLabel>
+                  <Controller
+                    name="latitude"
+                    control={control}
+                    render={({ field }) => (
+                      <NumberInput {...field} allowMouseWheel>
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    )}
+                  />
+                  <FormErrorMessage>{errors.latitude?.message}</FormErrorMessage>
+                </FormControl>
+
+                <FormControl flex={1} isInvalid={!!errors.longitude}>
+                  <FormLabel>Boylam (Longitude)</FormLabel>
+                  <Controller
+                    name="longitude"
+                    control={control}
+                    render={({ field }) => (
+                      <NumberInput {...field} allowMouseWheel>
+                        <NumberInputField />
+                        <NumberInputStepper>
+                          <NumberIncrementStepper />
+                          <NumberDecrementStepper />
+                        </NumberInputStepper>
+                      </NumberInput>
+                    )}
+                  />
+                  <FormErrorMessage>{errors.longitude?.message}</FormErrorMessage>
+                </FormControl>
+              </HStack>
+
+              <HStack spacing={4} width="100%">
+                <FormControl flex={1} isInvalid={!!errors.openingTime}>
+                  <FormLabel>Açılış Saati</FormLabel>
+                  <Input type="time" {...register('openingTime')} />
+                  <FormErrorMessage>{errors.openingTime?.message}</FormErrorMessage>
+                </FormControl>
+                <FormControl flex={1} isInvalid={!!errors.closingTime}>
+                  <FormLabel>Kapanış Saati</FormLabel>
+                  <Input type="time" {...register('closingTime')} />
+                  <FormErrorMessage>{errors.closingTime?.message}</FormErrorMessage>
+                </FormControl>
+              </HStack>
+
+              <FormControl isInvalid={!!errors.workingDays}>
+                <FormLabel>Çalışma Günleri</FormLabel>
+                <Controller
+                  name="workingDays"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      {...field}
+                      isMulti // Çoklu seçim
+                      value={field.value?.map(String) || []} // Select value string bekler
+                      onChange={(e) => field.onChange(Array.from(e.target.selectedOptions, option => Number(option.value)))}
+                    >
+                      {weekdays.map(day => (
+                        <option key={day.value} value={day.value}>
+                          {day.label}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                />
+                <FormErrorMessage>{errors.workingDays?.message}</FormErrorMessage>
+              </FormControl>
+
+              <HStack spacing={4} width="100%">
+                <FormControl flex={1} display="flex" alignItems="center">
+                  <FormLabel mb="0">Ana Şube mi?</FormLabel>
+                  <Switch {...register('isMainBranch')} size="lg" />
+                </FormControl>
+                <FormControl flex={1} display="flex" alignItems="center">
+                  <FormLabel mb="0">Aktif mi?</FormLabel>
+                  <Switch {...register('active')} size="lg" />
+                </FormControl>
+              </HStack>
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose}>
+              İptal
+            </Button>
+            <Button colorScheme="atropos" type="submit" isLoading={isSubmitting}>
+              {branch ? 'Güncelle' : 'Kaydet'}
+            </Button>
+          </ModalFooter>
+        </form>
+      </ModalContent>
+    </Modal>
+  );
+};
+
+export default BranchFormModal;
 ```
+
+**Adım 7.3: Frontend DTO'ları için Senkronizasyon (Opsiyonel ama İyi Uygulama)**
+
+Backend'deki DTO'ları doğrudan frontend'de kullanabilmek için yollarını belirttik (`../../../backend/src/branch/dto/create-branch.dto`). Bu, kod tekrarını önler ve tip güvenliğini artırır. Ancak, frontend'in backend'in `src` dizinine doğrudan bağımlı olması ideal değildir. Gelecekte, backend DTO'larını ayrı bir paylaşılan paket olarak yayınlamak veya her iki tarafın da kullanabileceği merkezi bir DTO/şema tanımı yaklaşımı (örn. monorepo içinde) düşünülmelidir. Şimdilik bu şekilde devam edebiliriz.
 
 **Test Etme Adımları:**
 
-1.  `atropos/backend` dizininde `pnpm run build` komutunu çalıştır (backend'de değişiklik yaptıysan).
+1.  `atropos/backend` dizininde `pnpm run build` komutunu çalıştır (eğer backend'de değişiklik yaptıysan).
 2.  Ana `atropos` dizininde `pnpm dev` komutunu çalıştır.
 
-Uygulama açıldığında, artık daha minimalist ve şık bir yükleme ekranı (App.tsx'ten) görmelisin. Bağlantı başarılı olduğunda, Dashboard'a geçecek ve burada daha önce istediğin "modern, sade, şık ve kurumsal" görünüme sahip bir ana menü seni karşılayacak. Sağ üstteki tema değiştirme butonu ve Dashboard'daki kartların hover/active efektlerini incele.
+Uygulama açıldığında:
+*   Dashboard'dan "Şubeler" kartına tıkla.
+*   `BranchesPage`'in yüklendiğini ve eğer varsa şirket ID'sine göre şubeleri listelediğini görmelisin.
+*   "Yeni Şube Ekle" butonuna tıkla. Bir modal açılmalı ve form görünmeli. Formu doldurup kaydetmeyi dene. Validasyon hatalarını kontrol et.
+*   Mevcut bir şubeyi düzenlemek için "Düzenle" butonuna tıkla, formun şube verileriyle dolduğunu gör ve değişiklik yapmayı dene.
+*   Bir şubeyi silmek için "Sil" butonuna tıkla ve onay mekanizmasını gör.
 
-Bu revizyonlar, Atropos'un ilk izlenimini ve kullanıcı deneyimini önemli ölçüde artırmalı. Bu adımı tamamladığında bana haber ver. Ardından, NestJS backend'inde `Branch` modülünü tamamlayacağız (eğer eksikleri varsa) ve frontend'deki `BranchesPage`'i gerçek veriyle doldurup CRUD işlevlerini ekleyeceğiz.
+Bu adımlar tamamlandığında bana haber ver. `BranchesPage` artık tam CRUD işlevselliğine sahip olacak ve uygulamanızın ilk gerçek veri yönetim ekranı tamamlanmış olacak!
