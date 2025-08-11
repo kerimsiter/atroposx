@@ -1,412 +1,431 @@
-Mükemmel! Gördüğüm kadarıyla Electron ve NestJS arasındaki entegrasyon başarılı bir şekilde çalışıyor. Frontend'in backend'den şirket verilerini çekmesi ve durum mesajını göstermesi, altyapının doğru kurulduğunu kanıtlıyor. Tebrikler!
-
-Şimdi projemizi görsel olarak daha çekici ve kullanışlı hale getirmek için `Chakra UI` entegrasyonuna geçelim. Bu adımda, karanlık/aydınlık tema desteğini de aktif edeceğiz.
+Harika, hazırsan hemen başlayalım! Piyasa araştırmandan aldığın geri bildirimler doğrultusunda, **Görev 5: Ana Uygulama Düzeni ve Çoklu Şube Yönetimi Arayüzü (Modern & Dokunmatik Dostu Yaklaşım)**'na başlıyoruz. Bu adımda, uygulamamızın genel UI iskeletini, ana menü/dashboard'u ve temel routing yapısını kuracağız.
 
 ---
 
-### Görev 4: Chakra UI Kurulumu ve Tema Yapılandırması
+### Görev 5: Ana Uygulama Düzeni ve Çoklu Şube Yönetimi Arayüzü
 
-Bu görevde, `Chakra UI` kütüphanesini React frontend'imize entegre edeceğiz, temel tema ayarlarını yapacak ve karanlık/aydınlık tema geçişini etkinleştireceğiz.
+**Adım 5.1: Frontend Routing (React Router) Kurulumu**
 
-**Adım 4.1: Chakra UI Paketlerini Kurma**
-
-İlk olarak, `atropos/src/frontend` dizinine git.
+Öncelikle, frontend uygulamanızda sayfalar arası geçişi yönetmek için `react-router-dom` kütüphanesini kuralım. `atropos/src/frontend` dizininde olduğundan emin ol.
 
 ```cmd
-cd src\frontend
+pnpm add react-router-dom
 ```
 
-Şimdi gerekli Chakra UI paketlerini yükle:
+**Adım 5.2: Temel Layout ve Header Bileşenleri Oluşturma**
 
-```cmd
-pnpm add @chakra-ui/react@2 @emotion/react@^11 @emotion/styled@^11 framer-motion@^6
-```
-*(Not: Chakra UI v2 için bu sürümleri belirtmek en güvenlisi. Chakra UI dokümanlarında bu bağımlılıklar belirtilmiştir.)*
+Şimdi uygulamanızın genel düzenini (`Layout`) ve üst çubuğu (`Header`) oluşturalım.
 
-**Adım 4.2: `ChakraProvider`'ı Uygulama Kökenine Ekleme**
+1.  **`src/frontend/src/components` Klasörünü Oluştur:**
+    Eğer yoksa, `src\frontend\src` altında `components` adında bir klasör oluştur.
 
-Uygulamanın genel stilini yönetmek için `ChakraProvider`'ı `App` bileşeni etrafına sarmalıyız.
+    ```cmd
+    mkdir src\frontend\src\components
+    ```
 
-`atropos/src/frontend/src/main.tsx` dosyasını aç ve içeriğini aşağıdaki gibi güncelle:
+2.  **`Header.tsx` Bileşenini Oluştur:**
+    Bu bileşen, uygulamanın üst kısmında yer alacak ve logo, şube adı, kullanıcı adı ve tema geçiş düğmesi gibi kurumsal öğeleri içerecek.
 
-**`atropos/src/frontend/src/main.tsx`:**
-```typescript
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-// import './index.css' // Varsayılan stil dosyasını şimdilik yoruma alalım veya silelim
-import { ChakraProvider } from '@chakra-ui/react'; // ChakraProvider eklendi
-import theme from './theme'; // Kendi özel temamızı import edeceğiz
-
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <ChakraProvider theme={theme}> {/* ChakraProvider ile App sarmalandı ve tema verildi */}
-      <App />
-    </ChakraProvider>
-  </React.StrictMode>,
-);
-```
-
-**Adım 4.3: Özel Tema Oluşturma ve Renk Modunu Yapılandırma**
-
-Chakra UI'ın sunduğu tema yeteneklerini kullanmak için kendi `theme` dosyamızı oluşturacağız. Bu dosyada hem varsayılan renk modunu hem de sistem renk modu takibini ayarlayacağız.
-
-`atropos/src/frontend/src` altında `theme` adında yeni bir klasör oluştur:
-
-```cmd
-mkdir src\frontend\src\theme
-```
-
-Şimdi `atropos/src/frontend/src/theme/index.ts` dosyasını oluştur ve içine aşağıdaki içeriği yapıştır:
-
-**`atropos/src/frontend/src/theme/index.ts`:**
-```typescript
-import { extendTheme, type ThemeConfig } from '@chakra-ui/react';
-
-// 2. Renk modu yapılandırmasını ekle
-const config: ThemeConfig = {
-  initialColorMode: 'system', // Uygulama ilk açıldığında sistemin renk modunu kullan
-  useSystemColorMode: true, // Sistem renk modu değiştiğinde otomatik olarak değiş
-};
-
-// 3. Temayı genişlet
-const theme = extendTheme({
-  config,
-  // Burada diğer özel renklerini, fontlarını, bileşen stillerini vb. ekleyebilirsin
-  colors: {
-    brand: {
-      900: '#1a365d',
-      800: '#153e75',
-      700: '#2a69ac',
-    },
-    atropos: { // Kendi özel renk paletin
-      50: '#E6FFFA',
-      100: '#B2F5EA',
-      200: '#81E6D9',
-      300: '#4FD1C5',
-      400: '#38B2AC',
-      500: '#319795', // Ana rengin olabilir
-      600: '#2C7A7B',
-      700: '#285E61',
-      800: '#234E52',
-      900: '#1D4044',
-    }
-  },
-  components: {
-    // Örnek: Button'ın varsayılan stilini değiştirebilirsin
-    Button: {
-      baseStyle: {
-        fontWeight: 'bold',
-      },
-      variants: {
-        solid: (props: any) => ({
-          bg: props.colorMode === 'dark' ? 'atropos.300' : 'atropos.500',
-          color: 'white',
-          _hover: {
-            bg: props.colorMode === 'dark' ? 'atropos.200' : 'atropos.600',
-          },
-        }),
-      },
-    },
-  },
-  // Global stilleri tanımlayabilirsin
-  styles: {
-    global: (props: any) => ({
-      body: {
-        fontFamily: 'body',
-        color: props.colorMode === 'dark' ? 'whiteAlpha.900' : 'gray.800',
-        bg: props.colorMode === 'dark' ? 'gray.800' : 'white',
-        lineHeight: 'base',
-      },
-      // Diğer global stiller...
-    }),
-  },
-});
-
-export default theme;
-```
-Bu dosya ile `initialColorMode`'u `system` olarak ayarladık, yani uygulaman Windows'un veya macOS'un mevcut renk moduna göre başlayacak. Ayrıca `useSystemColorMode: true` ile sistemin renk modu değiştiğinde uygulamanın da otomatik olarak değişmesini sağladık. Örnek renk paleti ve Button stili ekledim, bunları kendi markana göre özelleştirebilirsin.
-
-**Adım 4.4: `ColorModeScript`'i `index.html`'e Ekleme**
-
-`ColorModeScript`'i, Chakra UI'ın renk modunu HTML yüklenirken doğru şekilde ayarlamasını sağlamak için eklemeliyiz. Bu, "flash of unstyled content" (FOUC) olarak bilinen kısa süreli tema geçişi sorununu önlemeye yardımcı olur.
-
-`atropos/src/frontend/index.html` dosyasını aç ve `<head>` etiketinin içine, `<body>` etiketinden hemen önce aşağıdaki satırı ekle:
-
-**`atropos/src/frontend/index.html`:**
-```html
-<!doctype html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Electron</title>
-    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; 
-               connect-src 'self' http://127.0.0.1:3000 http://localhost:3000;
-               script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
-               style-src 'self' 'unsafe-inline'; 
-               img-src 'self' data: blob:; 
-               font-src 'self' data:;"
-    />
-  </head>
-
-  <body>
-    <div id="root"></div>
-    <!-- 👇 Here's the script -->
-    <script type="module" src="/src/main.tsx"></script>
-    <script src="/node_modules/@chakra-ui/react/dist/colormode.js" data-config-initial-color-mode="system"></script>
-  </body>
-</html>
-```
-**Düzeltme:** Yukarıdaki `ColorModeScript` yolu doğru çalışmayabilir, çünkü `node_modules` doğrudan `index.html` tarafından erişilebilir değildir. Chakra UI belgelerinde belirtildiği gibi, `ColorModeScript`'i `main.tsx`'e doğrudan dahil etmek veya Electron'ın `preload` script'i aracılığıyla eklemek daha doğru bir yaklaşımdır.
-
-**En Doğru Yöntem: `main.tsx` içine ekleme (Chakra UI belgelerine göre)**
-`atropos/src/frontend/src/main.tsx` dosyasını tekrar aç ve `<ChakraProvider>`'dan önce `ColorModeScript`'i ekle:
-
-**`atropos/src/frontend/src/main.tsx` (Güncellenmiş):**
-```typescript
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import { ChakraProvider, ColorModeScript } from '@chakra-ui/react'; // ColorModeScript eklendi
-import theme from './theme'; // Kendi özel temamız
-
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <ColorModeScript initialColorMode={theme.config.initialColorMode} /> {/* Buraya eklendi */}
-    <ChakraProvider theme={theme}>
-      <App />
-    </ChakraProvider>
-  </React.StrictMode>,
-);
-```
-Bu şekilde `ColorModeScript` doğru çalışacaktır. `index.html`'den eklediğin satırı silebilirsin. Ayrıca `index.html`'deki `Content-Security-Policy`'yi biraz genişlettim ki gelecekte dış kaynaklardan resim veya font çekme gibi durumlarda sorun yaşama.
-
-**Adım 4.5: `App.tsx`'i Chakra Bileşenleriyle Güncelleme**
-
-Şimdi `App.tsx` dosyasındaki mevcut içeriği Chakra UI bileşenleriyle yeniden düzenleyerek uygulamanın görünümünü iyileştirelim. Ayrıca, tema değiştirmek için bir düğme ekleyeceğiz.
-
-`atropos/src/frontend/src/App.tsx` dosyasını aç ve içeriğini aşağıdaki gibi güncelle:
-
-**`atropos/src/frontend/src/App.tsx`:**
-```typescript
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Text,
-  VStack,
-  HStack,
-  Button,
-  useColorMode, // Tema değiştirmek için hook
-  useColorModeValue, // Tema bağlı değerler için hook
-  Spinner, // Yükleme animasyonu için
-  Alert, AlertIcon, AlertTitle, AlertDescription, // Durum mesajları için
-} from '@chakra-ui/react';
-import { SunIcon, MoonIcon } from '@chakra-ui/icons'; // Tema geçiş ikonları için
-import logo from './assets/electron.svg'; // Electron logosunu kullanmaya devam edebiliriz
-
-function App(): React.JSX.Element {
-  const [backendUrl, setBackendUrl] = useState<string | null>(null);
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [statusMessage, setStatusMessage] = useState('Backend API URL alınıyor...');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
-
-  const { colorMode, toggleColorMode } = useColorMode(); // Tema geçiş hook'u
-  const textColor = useColorModeValue('gray.800', 'whiteAlpha.900'); // Tema bazlı metin rengi
-
-  // Electron IPC (main process ile iletişim)
-  const handleIpcPing = (): void => window.electron.ipcRenderer.send('ping');
-
-  useEffect(() => {
-    // Main process'ten NestJS API URL'ini al
-    window.api.getNestApiUrl().then((url) => {
-      setBackendUrl(url);
-      setStatusMessage(`NestJS API URL: ${url}`);
-    }).catch((err) => {
-      setStatusMessage(`API URL alınamadı: ${err.message}`);
-      console.error(err);
-      setIsLoading(false);
-      setIsError(true);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (backendUrl) {
-      // API bağlantısını test et ve şirketleri çek
-      const fetchCompanies = async () => {
-        try {
-          const response = await fetch(`${backendUrl}/company`);
-          if (!response.ok) {
-            throw new Error(`HTTP hatası! Durum: ${response.status}`);
-          }
-          const data = await response.json();
-          setCompanies(data);
-          setStatusMessage('Backend bağlantısı başarılı! Şirketler yüklendi.');
-          setIsLoading(false);
-          setIsError(false);
-        } catch (error: any) {
-          setStatusMessage(`Backend bağlantı hatası: ${error.message}`);
-          console.error('Şirketler çekilirken hata oluştu:', error);
-          setIsLoading(false);
-          setIsError(true);
-        }
-      };
-
-      // Backend'in başlaması için kısa bir süre bekle, sonra bağlantıyı test et
-      setTimeout(fetchCompanies, 2000);
-    }
-  }, [backendUrl]);
-
-  return (
-    <VStack p={8} spacing={6} align="center" justify="center" minH="100vh" bg={useColorModeValue('gray.50', 'gray.900')}>
-      <HStack position="absolute" top={4} right={4}>
-        <Button onClick={toggleColorMode} size="sm">
-          {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
-        </Button>
-      </HStack>
-
-      <Box fontSize="5xl" mb={4}>⚡</Box>
-      <Text fontSize="2xl" fontWeight="bold">Atropos POS System</Text>
-      
-      <Text fontSize="lg" color={textColor}>
-        Built with <Text as="span" color="blue.400">React</Text>,{' '}
-        <Text as="span" color="cyan.400">TypeScript</Text>,{' '}
-        <Text as="span" color="purple.400">NestJS</Text> &{' '}
-        <Text as="span" color="green.400">PostgreSQL</Text>
-      </Text>
-
-      <Box
-        p={5}
-        shadow="md"
-        borderWidth="1px"
-        borderRadius="lg"
-        bg={useColorModeValue('white', 'gray.700')}
-        color={textColor}
-        width={{ base: '90%', md: '600px' }}
-      >
-        <Text fontSize="xl" fontWeight="semibold" mb={3}>Backend Status</Text>
-        {isLoading ? (
-          <HStack justifyContent="center">
-            <Spinner size="md" />
-            <Text>{statusMessage}</Text>
-          </HStack>
-        ) : isError ? (
-          <Alert status="error">
-            <AlertIcon />
-            <AlertTitle mr={2}>Bağlantı Hatası!</AlertTitle>
-            <AlertDescription>{statusMessage}</AlertDescription>
-          </Alert>
-        ) : (
-          <Alert status="success">
-            <AlertIcon />
-            <AlertTitle mr={2}>Bağlantı Başarılı!</AlertTitle>
-            <AlertDescription>{statusMessage}</AlertDescription>
-          </Alert>
-        )}
-
-        {companies.length > 0 && (
-          <Box mt={4}>
-            <Text fontSize="lg" fontWeight="semibold">Veritabanındaki Şirketler:</Text>
-            <VStack as="ul" align="flex-start" mt={2} spacing={1}>
-              {companies.map((company) => (
-                <Text as="li" key={company.id}>
-                  <Text as="span" fontWeight="bold">{company.name}</Text> (Vergi No: {company.taxNumber})
-                </Text>
-              ))}
-            </VStack>
-          </Box>
-        )}
-      </Box>
-
-      <Text className="tip" fontSize="sm" color={textColor}>
-        Backend loglarını ve daha fazlasını görmek için <code>F12</code> tuşuna basarak DevTools'u açın.
-      </Text>
-      
-      <HStack spacing={4} mt={6}>
-        <Button as="a" href="https://electron-vite.org/" target="_blank" rel="noreferrer" colorScheme="blue">
-          Dokümantasyon
-        </Button>
-        <Button onClick={handleIpcPing} colorScheme="teal">
-          IPC Gönder
-        </Button>
-      </HStack>
-      
-      <Box mt={8}>
-        <Versions /> {/* Versions bileşeni hala ayrı bir dosya olduğunu varsayalım */}
-      </Box>
-    </VStack>
-  );
-}
-
-// Versions bileşeninin dışarıdan import edildiğini varsayalım
-// Eğer App.tsx içinde tanımlıysa, taşımana gerek yok.
-function Versions() {
-  const [versions, setVersions] = useState<{ [key: string]: string } | null>(null);
-
-  useEffect(() => {
-    if (window.electron && window.electron.process && window.electron.ipcRenderer) {
-      // Electron sürümlerini IPC üzerinden almak için
-      const getVersions = async () => {
-        try {
-          const chrome = await window.electron.ipcRenderer.invoke('get-chrome-version');
-          const electron = await window.electron.ipcRenderer.invoke('get-electron-version');
-          const node = await window.electron.ipcRenderer.invoke('get-node-version');
-          setVersions({ chrome, electron, node });
-        } catch (error) {
-          console.error("Failed to get versions from main process:", error);
-        }
-      };
-      getVersions();
-    }
-  }, []);
-
-  return (
-    <HStack spacing={4} fontSize="sm" color="gray.500">
-      {versions ? (
-        <>
-          <Text>Electron v{versions.electron}</Text>
-          <Text>Chromium v{versions.chrome}</Text>
-          <Text>Node v{versions.node}</Text>
-        </>
-      ) : (
-        <Text>Sürümler yükleniyor...</Text>
-      )}
-    </HStack>
-  );
-}
-
-export default App;
-```
-**Önemli Notlar:**
-
-*   `src/frontend/src/App.css` dosyasının içeriğini temizlemeni veya silmeni öneririm, çünkü Chakra UI kendi stil sistemini kullanacak ve çakışmalar yaşanabilir.
-*   `Versions` bileşenini mevcut haliyle bıraktım. Eğer `Versions.tsx` adında ayrı bir dosya değilse, yukarıdaki kodu kendi `App.tsx` dosyanın altına direkt yapıştırabilir veya mevcut `Versions` import'unu kaldırıp yerine içeriğini kopyalayabilirsin. `electron-vite` şablonu genelde bunu ayrı bir `components` klasöründe tutar.
-*   `window.electron.ipcRenderer.invoke` ile Electron sürümlerini almak için `main/index.ts` dosyanda da bu IPC handler'ları eklemen gerekecek:
-    **`atropos/src/main/index.ts` (Sürümleri döndüren IPC handler'ları ekle):**
+    **`atropos/src/frontend/src/components/Header.tsx`:**
     ```typescript
-    // ... (mevcut kodlar) ...
+    import {
+      Box,
+      Flex,
+      Text,
+      IconButton,
+      HStack,
+      Spacer,
+      useColorMode,
+      useColorModeValue,
+      Menu,
+      MenuButton,
+      MenuList,
+      MenuItem,
+    } from '@chakra-ui/react';
+    import { SettingsIcon, SunIcon, MoonIcon, ChevronDownIcon } from '@chakra-ui/icons';
+    import React from 'react';
 
-    app.whenReady().then(() => {
-      // ... (mevcut kodlar) ...
+    const Header: React.FC = () => {
+      const { colorMode, toggleColorMode } = useColorMode();
+      const bgColor = useColorModeValue('gray.100', 'gray.700');
+      const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
 
-      // Sürüm bilgileri için IPC handler'ları ekle
-      ipcMain.handle('get-chrome-version', () => process.versions.chrome);
-      ipcMain.handle('get-electron-version', () => process.versions.electron);
-      ipcMain.handle('get-node-version', () => process.versions.node);
+      // TODO: Dinamik şube ve kullanıcı bilgileri buraya gelecek
+      const currentBranchName = "Ana Şube";
+      const currentUserName = "Oğuzhan A.";
+      const appName = "Atropos POS System"; // Uygulama adı
 
-      createWindow();
-      // ... (geri kalan kodlar) ...
-    });
+      return (
+        <Flex
+          as="header"
+          width="100%"
+          p={4}
+          bg={bgColor}
+          color={textColor}
+          borderBottomWidth="1px"
+          borderColor={useColorModeValue('gray.200', 'gray.600')}
+          align="center"
+          justify="space-between"
+        >
+          {/* Sol Kısım: Logo ve Uygulama Adı */}
+          <HStack spacing={3}>
+            <Box fontSize="2xl" fontWeight="bold">⚡</Box> {/* Basit logo */}
+            <Text fontSize="xl" fontWeight="semibold">{appName}</Text>
+          </HStack>
+
+          <Spacer />
+
+          {/* Sağ Kısım: Şube, Kullanıcı, Tema ve Ayarlar */}
+          <HStack spacing={4}>
+            {/* Şube Seçimi (Şimdilik Sabit) */}
+            <Menu>
+              <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="sm">
+                {currentBranchName}
+              </MenuButton>
+              <MenuList>
+                {/* TODO: Dinamik şubeler buraya gelecek */}
+                <MenuItem>Şube 1</MenuItem>
+                <MenuItem>Şube 2</MenuItem>
+              </MenuList>
+            </Menu>
+
+            {/* Kullanıcı Bilgisi (Şimdilik Sabit) */}
+            <Menu>
+              <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="sm">
+                {currentUserName}
+              </MenuButton>
+              <MenuList>
+                <MenuItem>Profil</MenuItem>
+                <MenuItem>Çıkış Yap</MenuItem>
+              </MenuList>
+            </Menu>
+
+            {/* Tema Geçiş Butonu */}
+            <IconButton
+              aria-label="Toggle color mode"
+              icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+              onClick={toggleColorMode}
+              size="sm"
+              isRound
+            />
+
+            {/* Ayarlar Butonu */}
+            <IconButton
+              aria-label="Settings"
+              icon={<SettingsIcon />}
+              size="sm"
+              isRound
+              onClick={() => {
+                // TODO: Ayarlar sayfasına yönlendirme veya modal açma
+                console.log('Ayarlar açılıyor...');
+              }}
+            />
+          </HStack>
+        </Flex>
+      );
+    };
+
+    export default Header;
+    ```
+
+3.  **`Layout.tsx` Bileşenini Oluştur:**
+    Bu bileşen, `Header`'ı içerecek ve uygulamanın tüm sayfalarını sarmalayacak genel bir düzen sağlayacak.
+
+    **`atropos/src/frontend/src/components/Layout.tsx`:**
+    ```typescript
+    import { Box, Flex } from '@chakra-ui/react';
+    import React from 'react';
+    import Header from './Header'; // Header bileşenini import et
+
+    interface LayoutProps {
+      children: React.ReactNode;
+    }
+
+    const Layout: React.FC<LayoutProps> = ({ children }) => {
+      return (
+        <Flex direction="column" minH="100vh">
+          <Header /> {/* Üst çubuk */}
+          <Box as="main" flex="1" p={0}> {/* Ana içerik alanı, p=0 ile padding'i kaldır */}
+            {children}
+          </Box>
+        </Flex>
+      );
+    };
+
+    export default Layout;
+    ```
+
+**Adım 5.3: Ana Dashboard Bileşeni Oluşturma**
+
+Ana menü veya dashboard sayfası, büyük dokunmatik dostu butonlarla modüllere hızlı erişim sağlayacak.
+
+1.  **`src/frontend/src/pages` Klasörünü Oluştur:**
+    Eğer yoksa, `src\frontend\src` altında `pages` adında bir klasör oluştur.
+
+    ```cmd
+    mkdir src\frontend\src\pages
+    ```
+
+2.  **`Dashboard.tsx` Bileşenini Oluştur:**
+    Bu, uygulamanın ana ekranı olacak.
+
+    **`atropos/src/frontend/src/pages/Dashboard.tsx`:**
+    ```typescript
+    import {
+      Box,
+      Text,
+      VStack,
+      HStack,
+      SimpleGrid,
+      Icon,
+      Button,
+      useColorModeValue,
+    } from '@chakra-ui/react';
+    import React, { useState, useEffect } from 'react';
+    import { Link as RouterLink } from 'react-router-dom';
+    import { FaShoppingCart, FaCashRegister, FaUtensils, FaBoxes, FaUsers, FaChartLine, FaStoreAlt, FaCog } from 'react-icons/fa'; // İkonlar için
+
+    // Navigasyon kartları için veri
+    const menuItems = [
+      { id: 'sales', name: 'SATIŞLAR', icon: FaShoppingCart, path: '/sales', color: 'red.500' },
+      { id: 'cash-register', name: 'KASA', icon: FaCashRegister, path: '/cash-register', color: 'blue.500' },
+      { id: 'products', name: 'ÜRÜNLER', icon: FaUtensils, path: '/products', color: 'green.500' },
+      { id: 'stocks', name: 'STOKLAR', icon: FaBoxes, path: '/stocks', color: 'orange.500' },
+      { id: 'customers', name: 'CARİLER', icon: FaUsers, path: '/customers', color: 'purple.500' },
+      { id: 'reports', name: 'RAPORLAR', icon: FaChartLine, path: '/reports', color: 'teal.500' },
+      { id: 'branches', name: 'ŞUBELER', icon: FaStoreAlt, path: '/branches', color: 'brown.500' },
+      { id: 'settings', name: 'AYARLAR', icon: FaCog, path: '/settings', color: 'gray.600' },
+    ];
+
+    const Dashboard: React.FC = () => {
+      const cardBgColor = useColorModeValue('white', 'gray.700');
+      const cardHoverBgColor = useColorModeValue('gray.50', 'gray.600');
+      const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
+      const timeColor = useColorModeValue('gray.700', 'whiteAlpha.800');
+
+      const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+      useEffect(() => {
+        const timer = setInterval(() => {
+          setCurrentDateTime(new Date());
+        }, 1000); // Her saniye günceller
+        return () => clearInterval(timer);
+      }, []);
+
+      const formatDate = (date: Date) => {
+        const options: Intl.DateTimeFormatOptions = {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        };
+        return date.toLocaleDateString('tr-TR', options);
+      };
+
+      const formatTime = (date: Date) => {
+        const options: Intl.DateTimeFormatOptions = {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false, // 24 saat formatı
+        };
+        return date.toLocaleTimeString('tr-TR', options);
+      };
+
+
+      return (
+        <Flex height="calc(100vh - 68px)" p={6} pt={0} bg={useColorModeValue('gray.50', 'gray.800')}> {/* Header yüksekliğini düş */}
+          {/* Sol Panel: Tarih ve Saat */}
+          <VStack
+            width={{ base: '100%', md: '25%' }}
+            minWidth={{ md: '250px' }} // Sabit genişlik
+            p={6}
+            spacing={8}
+            align="flex-start"
+            justify="center"
+            bg={useColorModeValue('white', 'gray.900')}
+            borderRadius="lg"
+            shadow="md"
+            mr={6}
+            display={{ base: 'none', md: 'flex' }} // Mobil ve küçük ekranlarda gizle
+          >
+            <Text fontSize="2xl" fontWeight="bold" color={textColor}>
+              {formatDate(currentDateTime)}
+            </Text>
+            <Text fontSize="6xl" fontWeight="extrabold" color={timeColor}>
+              {formatTime(currentDateTime)}
+            </Text>
+
+            {/* Bildirimler (Placeholder) */}
+            <VStack align="flex-start" spacing={3} width="100%" mt={8}>
+                <Text fontSize="lg" fontWeight="semibold" color={textColor}>BİLDİRİMLER</Text>
+                {/* TODO: Dinamik bildirimler buraya gelecek */}
+                <Box p={3} bg={useColorModeValue('blue.50', 'blue.800')} borderRadius="md" width="100%">
+                    <Text fontSize="sm" fontWeight="medium" color={useColorModeValue('blue.800', 'blue.100')}>Yeni online sipariş! Getir</Text>
+                    <Text fontSize="xs" color={useColorModeValue('blue.600', 'blue.300')}>15:27</Text>
+                </Box>
+                 <Box p={3} bg={useColorModeValue('green.50', 'green.800')} borderRadius="md" width="100%">
+                    <Text fontSize="sm" fontWeight="medium" color={useColorModeValue('green.800', 'green.100')}>Yeni online sipariş! Trendyol</Text>
+                    <Text fontSize="xs" color={useColorModeValue('green.600', 'green.300')}>15:32</Text>
+                </Box>
+                <Box p={3} bg={useColorModeValue('purple.50', 'purple.800')} borderRadius="md" width="100%">
+                    <Text fontSize="sm" fontWeight="medium" color={useColorModeValue('purple.800', 'purple.100')}>Yeni online sipariş! Yemek Sepeti</Text>
+                    <Text fontSize="xs" color={useColorModeValue('purple.600', 'purple.300')}>15:41</Text>
+                </Box>
+                <Button variant="link" colorScheme="blue" size="sm" mt={2} alignSelf="flex-end">
+                    Tüm bildirimleri göster →
+                </Button>
+            </VStack>
+
+            <Spacer />
+
+            <Button variant="ghost" colorScheme="gray" leftIcon={<Icon as={FaCog} />} mt={8}>
+              Müşteri Hizmetleri
+            </Button>
+
+            <Text fontSize="xs" color="gray.500" alignSelf="center">
+                Menulux Pos 1.0 (örnek referans)
+            </Text>
+
+            <HStack width="100%" justifyContent="center" mt={4}>
+              <Box p={2} bg={useColorModeValue('gray.200', 'gray.600')} borderRadius="md">
+                <Icon as={FaCog} />
+              </Box>
+              <Text fontSize="md" fontWeight="bold">Ayarlar</Text>
+            </HStack>
+          </VStack>
+
+          {/* Sağ Panel: Menü Butonları */}
+          <SimpleGrid
+            flex="1"
+            columns={{ base: 2, sm: 2, md: 3, lg: 4 }}
+            spacing={6}
+            p={6}
+            borderRadius="lg"
+            shadow="md"
+            bg={useColorModeValue('white', 'gray.900')}
+          >
+            {menuItems.map((item) => (
+              <Button
+                as={RouterLink}
+                to={item.path}
+                key={item.id}
+                height="150px"
+                flexDirection="column"
+                justifyContent="center"
+                alignItems="center"
+                textAlign="center"
+                py={6}
+                px={4}
+                borderRadius="lg"
+                shadow="md"
+                bg={cardBgColor}
+                _hover={{
+                  shadow: 'lg',
+                  transform: 'translateY(-2px)',
+                  transition: 'all 0.2s ease-in-out',
+                  bg: cardHoverBgColor,
+                }}
+                transition="all 0.2s ease-in-out"
+              >
+                <Icon as={item.icon} boxSize={10} color={item.color} mb={2} />
+                <Text fontSize="lg" fontWeight="semibold" color={textColor}>{item.name}</Text>
+              </Button>
+            ))}
+          </SimpleGrid>
+        </Flex>
+      );
+    };
+
+    export default Dashboard;
+    ```
+    `react-icons` paketini yüklememiz gerekiyor:
+
+    ```cmd
+    pnpm add react-icons
+    ```
+    Bu Dashboard bileşeni, dokunmatik ekranlar için uygun, büyük ve ikonik butonlar ile ana modüllere yönlendirme sağlayacak. Sol panelde tarih ve saat gibi anlık bilgiler yer alacak, sağ panel ise modül kartlarını içerecek.
+
+**Adım 5.4: `App.tsx`'i Güncelleme ve Routing Yapısını Kurma**
+
+Şimdi `App.tsx` dosyasını temizleyip `React Router`'ı ve oluşturduğumuz `Layout` ile `Dashboard` bileşenlerini entegre edelim.
+
+1.  **`src/frontend/src/App.css` Dosyasını Temizle:**
+    Bu dosyanın içeriğini tamamen boşalt veya sil. Chakra UI kendi stil sistemini kullanacağı için varsayılan CSS'e ihtiyacımız yok.
+
+2.  **`App.tsx`'i Güncelle:**
+    Ana uygulama mantığını ve router'ı bu dosyada tanımlayacağız. `App.tsx` artık temel bir router yapılandırması sunacak.
+
+    **`atropos/src/frontend/src/App.tsx`:**
+    ```typescript
+    import React from 'react';
+    import { BrowserRouter, Routes, Route } from 'react-router-dom';
+    import Layout from './components/Layout'; // Layout bileşenini import et
+    import Dashboard from './pages/Dashboard'; // Dashboard bileşenini import et
+    import BranchesPage from './pages/BranchesPage'; // Şubeler sayfası için placeholder
+
+    // İlk kurulumdaki ana sayfa içeriğini kaldırıyoruz
+    // import Versions from './components/Versions'; // Eğer Versions'ı Dashboard'a taşımadıysan, burada tutabilirsin veya silebilirsin.
+    // import logo from './assets/electron.svg';
+
+    function App(): React.JSX.Element {
+      // Backend bağlantı ve şirket çekme mantığı kaldırıldı, artık Dashboard'a yerleşebilir
+      // veya daha global bir state yönetimi ile yapılabilir.
+      // Şimdilik sadece routing üzerine odaklanıyoruz.
+
+      return (
+        <BrowserRouter>
+          <Layout> {/* Tüm rotaları Layout içinde sarmalıyoruz */}
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/branches" element={<BranchesPage />} /> {/* Şubeler sayfası rotası */}
+              {/* Diğer sayfalar için rotalar buraya eklenecek */}
+            </Routes>
+          </Layout>
+        </BrowserRouter>
+      );
+    }
+
+    export default App;
+    ```
+
+3.  **`BranchesPage.tsx` için Placeholder Oluştur:**
+    `src/frontend/src/pages` klasörünün altına `BranchesPage.tsx` adında şimdilik basit bir dosya oluşturalım.
+
+    **`atropos/src/frontend/src/pages/BranchesPage.tsx`:**
+    ```typescript
+    import { Box, Heading, Text, VStack, useColorModeValue } from '@chakra-ui/react';
+    import React from 'react';
+
+    const BranchesPage: React.FC = () => {
+      const bgColor = useColorModeValue('white', 'gray.700');
+      const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
+
+      return (
+        <VStack p={6} align="flex-start" bg={useColorModeValue('gray.50', 'gray.800')} minH="calc(100vh - 68px)">
+          <Box
+            p={5}
+            shadow="md"
+            borderWidth="1px"
+            borderRadius="lg"
+            bg={bgColor}
+            color={textColor}
+            width="100%"
+          >
+            <Heading mb={4}>Şubeler Yönetimi</Heading>
+            <Text>Bu sayfa, çoklu şube yönetimi arayüzünü içerecektir.</Text>
+            {/* TODO: Şube listesi, ekleme/düzenleme formları buraya gelecek */}
+          </Box>
+        </VStack>
+      );
+    };
+
+    export default BranchesPage;
     ```
 
 **Test Etme Adımları:**
 
-1.  `atropos/backend` dizininde `pnpm run build` komutunu çalıştır (NestJS backend'i güncellemek için).
+1.  `atropos/backend` dizininde `pnpm run build` komutunu çalıştır (eğer backend'de değişiklik yaptıysan).
 2.  Ana `atropos` dizininde `pnpm dev` komutunu çalıştır.
 
-Electron uygulaması açıldığında, artık Chakra UI'ın varsayılan temasıyla gelen modern bir arayüz görmelisin. Sağ üst köşedeki ay/güneş ikonlu düğmeye tıklayarak karanlık ve aydınlık temalar arasında geçiş yapabildiğini kontrol et. Backend bağlantı durumunun ve şirket listesinin de düzgün çalıştığını doğrula.
+Uygulama başladığında, yeni tasarladığımız Header ve Dashboard ekranını görmelisin. Dashboard'daki "Şubeler" butonuna tıklayarak `BranchesPage`'e geçiş yapabildiğini kontrol et.
 
-Bu adımlar tamamlandığında bana haber ver. Sonraki adımda, çoklu şube yönetimi için temel UI bileşenlerini tasarlamaya ve navigasyon yapısını kurmaya başlayabiliriz.
+Bu adımla birlikte, uygulamanızın modern, dokunmatik dostu ana ekranı ve temel navigasyon yapısı kurulmuş olacak. Bu adımı tamamladığında bana haber ver. Sonraki adımda, NestJS backend'inde `Branch` modülünü tamamlayacağız ve ardından frontend'deki `BranchesPage`'i gerçek veriyle doldurup CRUD işlevlerini ekleyeceğiz.
