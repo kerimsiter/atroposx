@@ -21,9 +21,14 @@
     "build:linux": "electron-vite build && electron-builder --linux"
   },
   "dependencies": {
+    "@chakra-ui/icons": "^2.2.4",
+    "@chakra-ui/react": "^2.10.9",
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
-    "electron-updater": "^6.3.9"
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "electron-updater": "^6.3.9",
+    "framer-motion": "^6.5.1"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",

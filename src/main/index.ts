@@ -115,6 +115,11 @@ app.whenReady().then(() => {
     return NEST_BASE_URL
   })
 
+  // Sürüm bilgileri için IPC handler'ları ekle
+  ipcMain.handle('get-chrome-version', () => process.versions.chrome);
+  ipcMain.handle('get-electron-version', () => process.versions.electron);
+  ipcMain.handle('get-node-version', () => process.versions.node);
+
   createWindow()
 
   app.on('activate', function () {
