@@ -1,599 +1,619 @@
-Harika! Görev 6'yı başarıyla tamamladın ve `Branch` modülü backend'de tam fonksiyonel hale geldi. `PrismaService` bağımlılık sorununu çözmen ve global bir `PrismaModule` oluşturman da takdire şayan bir mimari iyileştirme oldu.
+Mükemmel! `BranchesPage`'in beklediğimiz gibi çalıştığını, form modal'ın açıldığını ve modern tasarıma sahip olduğunu görmek harika. Gördüğüm kadarıyla, "Sistemde kayıtlı şirket bulunamadı" uyarısı da tam olarak beklenen bir durum, çünkü henüz frontend üzerinden şirket ekleme özelliği yapmadık. Bu uyarı, uygulamanın backend ile iletişim kurabildiğini ve şirket verisinin eksik olduğunu doğru bir şekilde tespit ettiğini gösteriyor.
 
-Şimdi sıra, backend'de hazır olan bu `Branch` modülünü frontend'e taşımaya ve kullanıcıların şube verilerini yönetebileceği modern bir arayüz oluşturmaya geldi.
+**Test için önemli not:** Bu uyarıyı ortadan kaldırmak ve şubeleri listeleyebilmek için, Postman veya Insomnia gibi bir API aracı kullanarak `http://localhost:3000/company` adresine **POST** isteği ile **bir şirket oluşturman** gerekiyor. Oluşturduğun şirketin ID'sini not almana gerek yok, `BranchesPage` otomatik olarak ilk şirketi bulup onun şubelerini çekmeye çalışacak.
+
+Şimdi, projenin kapsamını daha da genişletmek ve bir POS sisteminin temelini oluşturmaya devam etmek için bir sonraki adıma geçelim. `schema.prisma` şemanı da göz önünde bulundurarak, bir sonraki mantıklı adımın **Kategori ve Ürün Yönetimi** olacağını düşünüyorum. Bir POS sisteminde ürünleri tanımlayabilmek ve kategorize edebilmek temel bir işlevsellik.
 
 ---
 
-### Görev 7: Frontend `BranchesPage`'i Geliştirme (Şube Yönetimi Arayüzü)
+### Görev 8: Kategori ve Ürün Yönetimi Modüllerini Geliştirme
 
-Bu görevde, NestJS backend'indeki `Branch` API'larını kullanarak `BranchesPage`'i gerçek veriyle dolduracağız. Kullanıcıların şubeleri listeleyebileceği, yeni şube ekleyebileceği, mevcut şubeleri düzenleyebileceği ve silebileceği işlevselliği ekleyeceğiz.
+Bu görevde, NestJS backend'inizde `Category` ve `Product` modülleri için gerekli DTO'ları tanımlayacak, servis ve controller'larını oluşturacak ve frontend'de bu modüller için listeleme, ekleme, düzenleme arayüzlerini tasarlayacağız.
 
-**Önkoşullar:**
+**Adım 8.1: NestJS Backend'de `Category` Modülünü Oluşturma**
 
-*   `React Hook Form` ve `Zod` (veya `yup`, `class-validator`) ile form validasyonu yapacağız. `class-validator` zaten backend'de kullanıldığı için frontend'de de `class-validator` ve `class-transformer`'ı kullanmak mantıklı.
+`atropos/backend` dizininde olduğundan emin ol.
+
+1.  **Category Modülünü Oluştur:**
 
     ```cmd
-    cd src\frontend
-    pnpm add react-hook-form @hookform/resolvers class-validator class-transformer
+    pnpm nest g module category
     ```
 
-**Adım 7.1: `BranchesPage`'de Şube Listesini Görüntüleme**
+2.  **Category Servis ve Controller Oluştur:**
 
-`BranchesPage.tsx`'i güncelleyerek şubeleri API'dan çekip bir tabloda görüntüleyelim.
+    ```cmd
+    pnpm nest g service category --no-spec
+    pnpm nest g controller category --no-spec
+    ```
 
-**`atropos/src/frontend/src/pages/BranchesPage.tsx` (Güncellenmiş):**
-```typescript
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Heading,
-  Text,
-  VStack,
-  useColorModeValue,
-  Spinner,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
-  Button,
-  HStack,
-  useDisclosure, // Modal yönetimi için
-} from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
-import BranchFormModal from '../components/BranchFormModal'; // Form modal bileşeni
+3.  **`Category` Şeması için DTO'ları Oluşturma:**
+    `atropos/backend/src/category` altına `dto` klasörü oluştur:
 
-interface Branch {
-  id: string;
-  companyId: string;
-  code: string;
-  name: string;
-  address: string;
-  phone: string;
-  email?: string;
-  isMainBranch: boolean;
-  active: boolean;
-  // Diğer alanlar...
-}
+    ```cmd
+    mkdir src\category\dto
+    ```
+    Şimdi `Category` modeli için DTO'ları tanımlayalım:
 
-const BranchesPage: React.FC = () => {
-  const bgColor = useColorModeValue('white', 'gray.700');
-  const pageBgColor = useColorModeValue('gray.50', 'gray.800');
-  const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
+    **`atropos/backend/src/category/dto/create-category.dto.ts`:**
+    ```typescript
+    import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsNumber, Min, Max } from 'class-validator';
 
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [companyId, setCompanyId] = useState<string | null>(null); // Kullanıcıya ait companyId
-  const { isOpen, onOpen, onClose } = useDisclosure(); // Modal durumu
-  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null); // Düzenlenecek şube
+    export class CreateCategoryDto {
+      @IsNotEmpty()
+      @IsString()
+      companyId: string; // Hangi şirkete ait olduğu
 
-  // TODO: Bu companyId gerçek bir kullanıcı girişi veya seçimi ile dinamikleşmeli.
-  // Şimdilik App.tsx'ten çekilen ilk şirketin ID'sini kullanabiliriz,
-  // veya manuel bir test ID'si atayabiliriz.
-  // İleride auth eklenince login sonrası kullanıcıdan alınacak.
-  useEffect(() => {
-    // App.tsx'ten gelen şirket ID'sini almayı simüle edelim
-    window.api.getNestApiUrl().then(async (backendUrl) => {
-      try {
-        const response = await fetch(`${backendUrl}/company`);
-        const companies = await response.json();
-        if (companies && companies.length > 0) {
-          setCompanyId(companies[0].id); // İlk bulunan şirketin ID'sini kullan
-        } else {
-          setError('Sistemde kayıtlı şirket bulunamadı. Lütfen önce bir şirket oluşturun.');
-          setIsLoading(false);
+      @IsOptional()
+      @IsString()
+      parentId?: string; // Alt kategori ise üst kategori ID'si
+
+      @IsNotEmpty()
+      @IsString()
+      name: string;
+
+      @IsOptional()
+      @IsString()
+      description?: string;
+
+      @IsOptional()
+      @IsString()
+      image?: string; // Resim URL'i
+
+      @IsOptional()
+      @IsString()
+      color?: string; // Hex kodu veya renk adı
+
+      @IsOptional()
+      @IsString()
+      icon?: string; // İkon sınıfı veya URL'i
+
+      @IsOptional()
+      @IsBoolean()
+      showInKitchen?: boolean; // Mutfak ekranında gösterilsin mi
+
+      @IsOptional()
+      @IsNumber()
+      @Min(0)
+      preparationTime?: number; // Dakika
+
+      @IsOptional()
+      @IsNumber()
+      @Min(0)
+      displayOrder?: number; // Görüntülenme sırası
+
+      @IsOptional()
+      @IsBoolean()
+      active?: boolean; // Aktif mi
+
+      @IsOptional()
+      @IsBoolean()
+      showInMenu?: boolean; // QR menüde gösterilsin mi
+
+      @IsOptional()
+      @IsString()
+      printerGroupId?: string; // Hangi yazıcı grubuna ait
+    }
+    ```
+
+    **`atropos/backend/src/category/dto/update-category.dto.ts`:**
+    ```typescript
+    import { PartialType } from '@nestjs/mapped-types';
+    import { CreateCategoryDto } from './create-category.dto';
+
+    export class UpdateCategoryDto extends PartialType(CreateCategoryDto) {}
+    ```
+
+4.  **`CategoryService` Logic'ini Uygulama:**
+
+    **`atropos/backend/src/category/category.service.ts`:**
+    ```typescript
+    import { Injectable, NotFoundException } from '@nestjs/common';
+    import { PrismaService } from '../prisma/prisma.service';
+    import { CreateCategoryDto } from './dto/create-category.dto';
+    import { UpdateCategoryDto } from './dto/update-category.dto';
+    import { Category } from '@prisma/client';
+
+    @Injectable()
+    export class CategoryService {
+      constructor(private prisma: PrismaService) {}
+
+      async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
+        return this.prisma.category.create({ data: createCategoryDto });
+      }
+
+      async findAll(companyId: string, parentId?: string): Promise<Category[]> {
+        return this.prisma.category.findMany({
+          where: {
+            companyId,
+            parentId: parentId || null, // Eğer parentId verilirse o kategoriye ait alt kategoriler, yoksa ana kategoriler
+            deletedAt: null,
+          },
+          orderBy: {
+            displayOrder: 'asc',
+          },
+        });
+      }
+
+      async findOne(id: string): Promise<Category | null> {
+        const category = await this.prisma.category.findUnique({
+          where: { id },
+        });
+        if (!category || category.deletedAt !== null) {
+          throw new NotFoundException(`Category with ID "${id}" not found.`);
         }
-      } catch (err: any) {
-        setError(`Şirket ID alınamadı: ${err.message}`);
-        setIsLoading(false);
+        return category;
       }
-    });
-  }, []);
 
-
-  const fetchBranches = useCallback(async () => {
-    if (!companyId) return; // companyId yoksa çekme
-
-    setIsLoading(true);
-    setError(null);
-    try {
-      const backendUrl = await window.api.getNestApiUrl();
-      const response = await fetch(`${backendUrl}/branches?companyId=${companyId}`);
-      if (!response.ok) {
-        throw new Error(`HTTP hatası! Durum: ${response.status}`);
+      async update(id: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
+        await this.findOne(id);
+        return this.prisma.category.update({
+          where: { id },
+          data: updateCategoryDto,
+        });
       }
-      const data = await response.json();
-      setBranches(data);
-    } catch (err: any) {
-      setError(`Şubeler çekilirken hata oluştu: ${err.message}`);
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [companyId]);
 
-  useEffect(() => {
-    fetchBranches();
-  }, [fetchBranches]);
-
-  const handleCreateBranch = () => {
-    setSelectedBranch(null); // Yeni oluşturma modu
-    onOpen();
-  };
-
-  const handleEditBranch = (branch: Branch) => {
-    setSelectedBranch(branch); // Düzenleme modu
-    onOpen();
-  };
-
-  const handleDeleteBranch = async (id: string) => {
-    if (!window.confirm('Bu şubeyi silmek istediğinizden emin misiniz?')) {
-      return;
-    }
-    setIsLoading(true); // Yükleme durumuna geç
-    try {
-      const backendUrl = await window.api.getNestApiUrl();
-      const response = await fetch(`${backendUrl}/branches/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        throw new Error(`Silme hatası! Durum: ${response.status}`);
+      async remove(id: string): Promise<Category> {
+        await this.findOne(id);
+        // Soft delete
+        return this.prisma.category.update({
+          where: { id },
+          data: { deletedAt: new Date() },
+        });
       }
-      // Başarılı olursa listeyi yenile
-      await fetchBranches();
-    } catch (err: any) {
-      setError(`Şube silinirken hata oluştu: ${err.message}`);
-      console.error(err);
-      setIsLoading(false); // Hata durumunda yüklemeyi kapat
     }
-  };
+    ```
 
-  const handleFormSubmitSuccess = () => {
-    onClose(); // Modalı kapat
-    fetchBranches(); // Listeyi yenile
-  };
+5.  **`CategoryController` Logic'ini Uygulama:**
 
-  return (
-    <VStack p={6} align="flex-start" bg={pageBgColor} minH="calc(100vh - 68px)">
-      <Box
-        p={5}
-        shadow="md"
-        borderWidth="1px"
-        borderRadius="lg"
-        bg={bgColor}
-        color={textColor}
-        width="100%"
-      >
-        <HStack justifyContent="space-between" mb={4}>
-          <Heading size="lg">Şubeler Yönetimi</Heading>
-          <Button leftIcon={<AddIcon />} colorScheme="atropos" onClick={handleCreateBranch}>
-            Yeni Şube Ekle
-          </Button>
-        </HStack>
+    **`atropos/backend/src/category/category.controller.ts`:**
+    ```typescript
+    import {
+      Controller,
+      Get,
+      Post,
+      Body,
+      Patch,
+      Param,
+      Delete,
+      HttpCode,
+      HttpStatus,
+      UsePipes,
+      ValidationPipe,
+      Query,
+    } from '@nestjs/common';
+    import { CategoryService } from './category.service';
+    import { CreateCategoryDto } from './dto/create-category.dto';
+    import { UpdateCategoryDto } from './dto/update-category.dto';
 
-        {error && (
-          <Alert status="error" mb={4}>
-            <AlertIcon />
-            <AlertTitle mr={2}>Hata!</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+    @Controller('categories')
+    @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
+    export class CategoryController {
+      constructor(private readonly categoryService: CategoryService) {}
 
-        {isLoading ? (
-          <VStack w="100%" py={10}>
-            <Spinner size="xl" color="atropos.500" />
-            <Text mt={4}>Şubeler yükleniyor...</Text>
-          </VStack>
-        ) : branches.length === 0 && !error ? (
-          <Text py={10} textAlign="center" w="100%">
-            Kayıtlı şube bulunamadı. Yeni bir şube eklemek için yukarıdaki "Yeni Şube Ekle" butonunu kullanın.
-          </Text>
-        ) : (
-          <TableContainer width="100%">
-            <Table variant="simple">
-              <Thead>
-                <Tr>
-                  <Th>Kod</Th>
-                  <Th>Adı</Th>
-                  <Th>Adres</Th>
-                  <Th>Telefon</Th>
-                  <Th>Aktif</Th>
-                  <Th isNumeric>İşlemler</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {branches.map((branch) => (
-                  <Tr key={branch.id}>
-                    <Td>{branch.code}</Td>
-                    <Td>{branch.name}</Td>
-                    <Td>{branch.address}</Td>
-                    <Td>{branch.phone}</Td>
-                    <Td>{branch.active ? 'Evet' : 'Hayır'}</Td>
-                    <Td isNumeric>
-                      <HStack spacing={2} justifyContent="flex-end">
-                        <Button
-                          size="sm"
-                          leftIcon={<EditIcon />}
-                          onClick={() => handleEditBranch(branch)}
-                          colorScheme="blue"
-                        >
-                          Düzenle
-                        </Button>
-                        <Button
-                          size="sm"
-                          leftIcon={<DeleteIcon />}
-                          onClick={() => handleDeleteBranch(branch.id)}
-                          colorScheme="red"
-                        >
-                          Sil
-                        </Button>
-                      </HStack>
-                    </Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </TableContainer>
-        )}
-      </Box>
+      @Post()
+      @HttpCode(HttpStatus.CREATED)
+      create(@Body() createCategoryDto: CreateCategoryDto) {
+        return this.categoryService.create(createCategoryDto);
+      }
 
-      <BranchFormModal
-        isOpen={isOpen}
-        onClose={onClose}
-        branch={selectedBranch}
-        companyId={companyId}
-        onSuccess={handleFormSubmitSuccess}
-      />
-    </VStack>
-  );
-};
-
-export default BranchesPage;
-```
-
-**Adım 7.2: Yeni Şube Ekleme/Düzenleme Formu için Modal Bileşeni (`BranchFormModal.tsx`)**
-
-Bu modal, hem yeni şube ekleme hem de mevcut şubeyi düzenleme için kullanılacak formu içerecek. `React Hook Form` ve `class-validator` kullanarak validasyonları yöneteceğiz.
-
-**`atropos/src/frontend/src/components/BranchFormModal.tsx`:**
-```typescript
-import React, { useEffect } from 'react';
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Textarea,
-  Switch,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  Alert,
-  AlertIcon,
-  useToast, // Bildirimler için
-  Select,
-  FormErrorMessage, // Validasyon hataları için
-} from '@chakra-ui/react';
-import { useForm, Controller } from 'react-hook-form';
-import { ClassConstructor, plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
-import { CreateBranchDto } from '../../../../backend/src/branch/dto/create-branch.dto'; // Backend DTO'sunu kullanıyoruz
-import { UpdateBranchDto } from '../../../../backend/src/branch/dto/update-branch.dto'; // Backend DTO'sunu kullanıyoruz
-import { Branch } from '@prisma/client'; // Prisma Client tipini kullanıyoruz
-
-interface BranchFormModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  branch: Branch | null; // Düzenleme için mevcut şube verisi, yeni için null
-  companyId: string | null; // Şirket ID'si zorunlu
-  onSuccess: () => void; // Başarılı işlem sonrası callback
-}
-
-// React Hook Form için custom resolver
-const classValidatorResolver = <T extends object>(classType: ClassConstructor<T>) => {
-  return async (values: T) => {
-    const errors = await validate(plainToInstance(classType, values));
-    if (errors.length === 0) {
-      return { values, errors: {} };
-    }
-    const formattedErrors = errors.reduce((acc, error) => {
-      Object.keys(error.constraints || {}).forEach((key) => {
-        // Her alan için ilk hatayı göster
-        if (!acc[error.property]) {
-          acc[error.property] = { type: key, message: error.constraints![key] };
+      @Get()
+      findAll(
+        @Query('companyId') companyId: string,
+        @Query('parentId') parentId?: string,
+      ) {
+        if (!companyId) {
+          throw new Error('companyId query parameter is required.');
         }
-      });
-      return acc;
-    }, {});
-    return { values: {}, errors: formattedErrors };
-  };
-};
+        return this.categoryService.findAll(companyId, parentId);
+      }
 
-const BranchFormModal: React.FC<BranchFormModalProps> = ({ isOpen, onClose, branch, companyId, onSuccess }) => {
-  const toast = useToast();
-  const {
-    handleSubmit,
-    register,
-    reset,
-    formState: { errors, isSubmitting },
-    control, // Controller bileşeni için
-  } = useForm<CreateBranchDto>({
-    resolver: classValidatorResolver(branch ? UpdateBranchDto : CreateBranchDto),
-  });
+      @Get(':id')
+      findOne(@Param('id') id: string) {
+        return this.categoryService.findOne(id);
+      }
 
-  useEffect(() => {
-    // Modal açıldığında veya branch değiştiğinde formu resetle
-    if (isOpen) {
-      if (branch) {
-        reset({ // Mevcut şube verileriyle doldur
-          ...branch,
-          latitude: branch.latitude || undefined,
-          longitude: branch.longitude || undefined,
-          serverPort: branch.serverPort || undefined,
-          workingDays: branch.workingDays || [],
-          // Diğer boolean ve sayısal alanları da uygun şekilde cast et
-          isMainBranch: branch.isMainBranch,
-          active: branch.active,
+      @Patch(':id')
+      update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
+        return this.categoryService.update(id, updateCategoryDto);
+      }
+
+      @Delete(':id')
+      @HttpCode(HttpStatus.NO_CONTENT)
+      remove(@Param('id') id: string) {
+        return this.categoryService.remove(id);
+      }
+    }
+    ```
+
+6.  **`CategoryModule`'ü Ana Uygulamaya Dahil Etme:**
+
+    **`atropos/backend/src/app.module.ts` (Güncellenmiş):**
+    ```typescript
+    import { Module } from '@nestjs/common';
+    import { AppController } from './app.controller';
+    import { AppService } from './app.service';
+    import { CompanyModule } from './company/company.module';
+    import { BranchModule } from './branch/branch.module';
+    import { PrismaModule } from './prisma/prisma.module'; // PrismaModule'ü import etmeyi unutma
+    import { CategoryModule } from './category/category.module'; // Eklendi
+
+    @Module({
+      imports: [PrismaModule, CompanyModule, BranchModule, CategoryModule], // CategoryModule eklendi
+      controllers: [AppController],
+      providers: [AppService],
+    })
+    export class AppModule {}
+    ```
+    **Önemli:** `CategoryModule` içinde `PrismaService`'i provider olarak eklemene gerek yok, çünkü `PrismaModule` global olarak ayarlandı.
+
+**Adım 8.2: NestJS Backend'de `Product` Modülünü Oluşturma**
+
+`atropos/backend` dizininde olduğundan emin ol.
+
+1.  **Product Modülünü Oluştur:**
+
+    ```cmd
+    pnpm nest g module product
+    ```
+
+2.  **Product Servis ve Controller Oluştur:**
+
+    ```cmd
+    pnpm nest g service product --no-spec
+    pnpm nest g controller product --no-spec
+    ```
+
+3.  **`Product` Şeması için DTO'ları Oluşturma:**
+    `atropos/backend/src/product` altına `dto` klasörü oluştur:
+
+    ```cmd
+    mkdir src\product\dto
+    ```
+    `ProductUnit` enum'ını da backend DTO'larımıza eklememiz gerekecek.
+    **`atropos/backend/src/product/dto/product-unit.enum.ts`:**
+    ```typescript
+    export enum ProductUnit {
+      PIECE = 'PIECE',
+      KG = 'KG',
+      GRAM = 'GRAM',
+      LITER = 'LITER',
+      ML = 'ML',
+      PORTION = 'PORTION',
+      BOX = 'BOX',
+      PACKAGE = 'PACKAGE',
+    }
+    ```
+
+    Şimdi `Product` modeli için DTO'ları tanımlayalım:
+
+    **`atropos/backend/src/product/dto/create-product.dto.ts`:**
+    ```typescript
+    import {
+      IsString,
+      IsNotEmpty,
+      IsOptional,
+      IsNumber,
+      IsBoolean,
+      IsArray,
+      ArrayMinSize,
+      IsEnum,
+      Min,
+      Max,
+    } from 'class-validator';
+    import { Type } from 'class-transformer';
+    import { ProductUnit } from './product-unit.enum';
+
+    export class CreateProductDto {
+      @IsNotEmpty()
+      @IsString()
+      companyId: string;
+
+      @IsNotEmpty()
+      @IsString()
+      categoryId: string;
+
+      @IsNotEmpty()
+      @IsString()
+      code: string;
+
+      @IsOptional()
+      @IsString()
+      barcode?: string;
+
+      @IsNotEmpty()
+      @IsString()
+      name: string;
+
+      @IsOptional()
+      @IsString()
+      description?: string;
+
+      @IsOptional()
+      @IsString()
+      shortDescription?: string;
+
+      @IsOptional()
+      @IsString()
+      image?: string;
+
+      @IsOptional()
+      @IsArray()
+      @IsString({ each: true })
+      images?: string[];
+
+      @IsNotEmpty()
+      @IsNumber()
+      @Min(0)
+      @Type(() => Number)
+      basePrice: number; // Decimal yerine number kullanacağız ve DB'ye Prisma handle edecek
+
+      @IsNotEmpty()
+      @IsString()
+      taxId: string;
+
+      @IsOptional()
+      @IsNumber()
+      @Min(0)
+      @Type(() => Number)
+      costPrice?: number;
+
+      @IsOptional()
+      @IsNumber()
+      @Min(0)
+      @Max(100)
+      @Type(() => Number)
+      profitMargin?: number;
+
+      @IsOptional()
+      @IsBoolean()
+      trackStock?: boolean;
+
+      @IsOptional()
+      @IsEnum(ProductUnit)
+      unit?: ProductUnit;
+
+      @IsOptional()
+      @IsNumber()
+      @Min(0)
+      @Type(() => Number)
+      criticalStock?: number;
+
+      @IsOptional()
+      @IsBoolean()
+      available?: boolean;
+
+      @IsOptional()
+      @IsBoolean()
+      sellable?: boolean;
+
+      @IsOptional()
+      @IsNumber()
+      @Min(0)
+      @Type(() => Number)
+      preparationTime?: number;
+
+      @IsOptional()
+      @IsNumber()
+      @Min(0)
+      @Type(() => Number)
+      calories?: number;
+
+      @IsOptional()
+      @IsArray()
+      @IsString({ each: true })
+      allergens?: string[];
+
+      @IsOptional()
+      @IsBoolean()
+      hasVariants?: boolean;
+
+      @IsOptional()
+      @IsBoolean()
+      hasModifiers?: boolean;
+
+      @IsOptional()
+      @IsBoolean()
+      showInMenu?: boolean;
+
+      @IsOptional()
+      @IsBoolean()
+      featured?: boolean;
+
+      @IsOptional()
+      @IsNumber()
+      @Min(0)
+      @Type(() => Number)
+      displayOrder?: number;
+
+      @IsOptional()
+      @IsBoolean()
+      active?: boolean;
+    }
+    ```
+
+    **`atropos/backend/src/product/dto/update-product.dto.ts`:**
+    ```typescript
+    import { PartialType } from '@nestjs/mapped-types';
+    import { CreateProductDto } from './create-product.dto';
+
+    export class UpdateProductDto extends PartialType(CreateProductDto) {}
+    ```
+
+4.  **`ProductService` Logic'ini Uygulama:**
+
+    **`atropos/backend/src/product/product.service.ts`:**
+    ```typescript
+    import { Injectable, NotFoundException } from '@nestjs/common';
+    import { PrismaService } from '../prisma/prisma.service';
+    import { CreateProductDto } from './dto/create-product.dto';
+    import { UpdateProductDto } from './dto/update-product.dto';
+    import { Product } from '@prisma/client';
+
+    @Injectable()
+    export class ProductService {
+      constructor(private prisma: PrismaService) {}
+
+      async create(createProductDto: CreateProductDto): Promise<Product> {
+        return this.prisma.product.create({ data: createProductDto });
+      }
+
+      async findAll(companyId: string, categoryId?: string): Promise<Product[]> {
+        return this.prisma.product.findMany({
+          where: {
+            companyId,
+            categoryId: categoryId, // Kategoriye göre filtrele
+            deletedAt: null,
+          },
+          orderBy: {
+            displayOrder: 'asc',
+          },
         });
-      } else {
-        reset({ // Yeni şube için varsayılan değerler veya boş
-          companyId: companyId || '', // Eğer varsa companyId'yi otomatik doldur
-          code: '',
-          name: '',
-          address: '',
-          phone: '',
-          email: '',
-          latitude: undefined,
-          longitude: undefined,
-          serverIp: '',
-          serverPort: undefined,
-          isMainBranch: false,
-          openingTime: '09:00',
-          closingTime: '18:00',
-          workingDays: [1,2,3,4,5], // Pazartesi-Cuma varsayılan
-          cashRegisterId: '',
-          posTerminalId: '',
-          active: true,
+      }
+
+      async findOne(id: string): Promise<Product | null> {
+        const product = await this.prisma.product.findUnique({
+          where: { id },
+        });
+        if (!product || product.deletedAt !== null) {
+          throw new NotFoundException(`Product with ID "${id}" not found.`);
+        }
+        return product;
+      }
+
+      async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
+        await this.findOne(id);
+        return this.prisma.product.update({
+          where: { id },
+          data: updateProductDto,
+        });
+      }
+
+      async remove(id: string): Promise<Product> {
+        await this.findOne(id);
+        // Soft delete
+        return this.prisma.product.update({
+          where: { id },
+          data: { deletedAt: new Date() },
         });
       }
     }
-  }, [isOpen, branch, reset, companyId]);
+    ```
 
-  const onSubmit = async (values: CreateBranchDto | UpdateBranchDto) => {
-    if (!companyId && !branch?.companyId) {
-        toast({
-            title: 'Hata',
-            description: 'Şirket ID bulunamadı. Şube eklemek için önce bir şirket olmalı.',
-            status: 'error',
-            duration: 5000,
-            isClosable: true,
-        });
-        return;
-    }
+5.  **`ProductController` Logic'ini Uygulama:**
 
-    const payload = branch ? values : { ...values, companyId: companyId! }; // Yeni ise companyId ekle
-    const method = branch ? 'PATCH' : 'POST';
-    const url = branch
-      ? `${await window.api.getNestApiUrl()}/branches/${branch.id}`
-      : `${await window.api.getNestApiUrl()}/branches`;
+    **`atropos/backend/src/product/product.controller.ts`:**
+    ```typescript
+    import {
+      Controller,
+      Get,
+      Post,
+      Body,
+      Patch,
+      Param,
+      Delete,
+      HttpCode,
+      HttpStatus,
+      UsePipes,
+      ValidationPipe,
+      Query,
+    } from '@nestjs/common';
+    import { ProductService } from './product.service';
+    import { CreateProductDto } from './dto/create-product.dto';
+    import { UpdateProductDto } from './dto/update-product.dto';
 
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+    @Controller('products')
+    @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
+    export class ProductController {
+      constructor(private readonly productService: ProductService) {}
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Bir hata oluştu.');
+      @Post()
+      @HttpCode(HttpStatus.CREATED)
+      create(@Body() createProductDto: CreateProductDto) {
+        return this.productService.create(createProductDto);
       }
 
-      toast({
-        title: branch ? 'Şube Güncellendi' : 'Şube Eklendi',
-        description: branch ? 'Şube başarıyla güncellendi.' : 'Yeni şube başarıyla eklendi.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-      onSuccess(); // Başarılı işlem sonrası listeyi yenile
-    } catch (err: any) {
-      toast({
-        title: 'İşlem Başarısız',
-        description: err.message || 'Şube işlemi sırasında bir hata oluştu.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-      console.error('API Error:', err);
+      @Get()
+      findAll(
+        @Query('companyId') companyId: string,
+        @Query('categoryId') categoryId?: string,
+      ) {
+        if (!companyId) {
+          throw new Error('companyId query parameter is required.');
+        }
+        return this.productService.findAll(companyId, categoryId);
+      }
+
+      @Get(':id')
+      findOne(@Param('id') id: string) {
+        return this.productService.findOne(id);
+      }
+
+      @Patch(':id')
+      update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+        return this.productService.update(id, updateProductDto);
+      }
+
+      @Delete(':id')
+      @HttpCode(HttpStatus.NO_CONTENT)
+      remove(@Param('id') id: string) {
+        return this.productService.remove(id);
+      }
     }
-  };
+    ```
 
-  const weekdays = [
-    { value: 1, label: 'Pazartesi' },
-    { value: 2, label: 'Salı' },
-    { value: 3, label: 'Çarşamba' },
-    { value: 4, label: 'Perşembe' },
-    { value: 5, label: 'Cuma' },
-    { value: 6, label: 'Cumartesi' },
-    { value: 7, label: 'Pazar' },
-  ];
+6.  **`ProductModule`'ü Ana Uygulamaya Dahil Etme:**
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>{branch ? 'Şube Düzenle' : 'Yeni Şube Ekle'}</ModalHeader>
-        <ModalCloseButton />
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <ModalBody pb={6}>
-            <VStack spacing={4}>
-              <FormControl isInvalid={!!errors.code}>
-                <FormLabel>Şube Kodu</FormLabel>
-                <Input {...register('code', { required: true })} placeholder="Örn: IST01" />
-                <FormErrorMessage>{errors.code?.message}</FormErrorMessage>
-              </FormControl>
+    **`atropos/backend/src/app.module.ts` (Güncellenmiş):**
+    ```typescript
+    import { Module } from '@nestjs/common';
+    import { AppController } from './app.controller';
+    import { AppService } from './app.service';
+    import { CompanyModule } from './company/company.module';
+    import { BranchModule } from './branch/branch.module';
+    import { PrismaModule } from './prisma/prisma.module';
+    import { CategoryModule } from './category/category.module';
+    import { ProductModule } from './product/product.module'; // Eklendi
 
-              <FormControl isInvalid={!!errors.name}>
-                <FormLabel>Şube Adı</FormLabel>
-                <Input {...register('name', { required: true })} placeholder="Örn: İstanbul Ana Şube" />
-                <FormErrorMessage>{errors.name?.message}</FormErrorMessage>
-              </FormControl>
+    @Module({
+      imports: [PrismaModule, CompanyModule, BranchModule, CategoryModule, ProductModule], // ProductModule eklendi
+      controllers: [AppController],
+      providers: [AppService],
+    })
+    export class AppModule {}
+    ```
+    **Önemli:** `ProductModule` içinde de `PrismaService`'i provider olarak eklemene gerek yok.
 
-              <FormControl isInvalid={!!errors.address}>
-                <FormLabel>Adres</FormLabel>
-                <Textarea {...register('address', { required: true })} placeholder="Şube adresi" />
-                <FormErrorMessage>{errors.address?.message}</FormErrorMessage>
-              </FormControl>
+**Adım 8.3: Backend Build ve Test (İsteğe Bağlı ama Önerilir)**
 
-              <FormControl isInvalid={!!errors.phone}>
-                <FormLabel>Telefon</FormLabel>
-                <Input {...register('phone', { required: true })} placeholder="Örn: +905XXXXXXXXX" />
-                <FormErrorMessage>{errors.phone?.message}</FormErrorMessage>
-              </FormControl>
-              
-              <FormControl isInvalid={!!errors.email}>
-                <FormLabel>Email</FormLabel>
-                <Input type="email" {...register('email')} placeholder="Örn: info@sube.com" />
-                <FormErrorMessage>{errors.email?.message}</FormErrorMessage>
-              </FormControl>
+1.  **Prisma İstemcisini Tekrar Oluştur (yeni modeller için):**
+    `atropos/backend` dizinindeyken:
 
-              <HStack spacing={4} width="100%">
-                <FormControl flex={1} isInvalid={!!errors.latitude}>
-                  <FormLabel>Enlem (Latitude)</FormLabel>
-                  <Controller
-                    name="latitude"
-                    control={control}
-                    render={({ field }) => (
-                      <NumberInput {...field} allowMouseWheel>
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
-                    )}
-                  />
-                  <FormErrorMessage>{errors.latitude?.message}</FormErrorMessage>
-                </FormControl>
+    ```cmd
+    pnpm prisma generate
+    ```
 
-                <FormControl flex={1} isInvalid={!!errors.longitude}>
-                  <FormLabel>Boylam (Longitude)</FormLabel>
-                  <Controller
-                    name="longitude"
-                    control={control}
-                    render={({ field }) => (
-                      <NumberInput {...field} allowMouseWheel>
-                        <NumberInputField />
-                        <NumberInputStepper>
-                          <NumberIncrementStepper />
-                          <NumberDecrementStepper />
-                        </NumberInputStepper>
-                      </NumberInput>
-                    )}
-                  />
-                  <FormErrorMessage>{errors.longitude?.message}</FormErrorMessage>
-                </FormControl>
-              </HStack>
+2.  **Veritabanı Migrasyonunu Uygula (yeni modeller için):**
+    `atropos/backend` dizinindeyken:
 
-              <HStack spacing={4} width="100%">
-                <FormControl flex={1} isInvalid={!!errors.openingTime}>
-                  <FormLabel>Açılış Saati</FormLabel>
-                  <Input type="time" {...register('openingTime')} />
-                  <FormErrorMessage>{errors.openingTime?.message}</FormErrorMessage>
-                </FormControl>
-                <FormControl flex={1} isInvalid={!!errors.closingTime}>
-                  <FormLabel>Kapanış Saati</FormLabel>
-                  <Input type="time" {...register('closingTime')} />
-                  <FormErrorMessage>{errors.closingTime?.message}</FormErrorMessage>
-                </FormControl>
-              </HStack>
+    ```cmd
+    pnpm prisma migrate dev --name add_category_product_models
+    ```
+    Onaylaman istendiğinde `y` yazıp Enter'a bas.
 
-              <FormControl isInvalid={!!errors.workingDays}>
-                <FormLabel>Çalışma Günleri</FormLabel>
-                <Controller
-                  name="workingDays"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      {...field}
-                      isMulti // Çoklu seçim
-                      value={field.value?.map(String) || []} // Select value string bekler
-                      onChange={(e) => field.onChange(Array.from(e.target.selectedOptions, option => Number(option.value)))}
-                    >
-                      {weekdays.map(day => (
-                        <option key={day.value} value={day.value}>
-                          {day.label}
-                        </option>
-                      ))}
-                    </Select>
-                  )}
-                />
-                <FormErrorMessage>{errors.workingDays?.message}</FormErrorMessage>
-              </FormControl>
+3.  **Backend'i Tekrar Derle:**
+    `atropos/backend` dizinindeyken:
 
-              <HStack spacing={4} width="100%">
-                <FormControl flex={1} display="flex" alignItems="center">
-                  <FormLabel mb="0">Ana Şube mi?</FormLabel>
-                  <Switch {...register('isMainBranch')} size="lg" />
-                </FormControl>
-                <FormControl flex={1} display="flex" alignItems="center">
-                  <FormLabel mb="0">Aktif mi?</FormLabel>
-                  <Switch {...register('active')} size="lg" />
-                </FormControl>
-              </HStack>
-            </VStack>
-          </ModalBody>
+    ```cmd
+    pnpm run build
+    ```
 
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
-              İptal
-            </Button>
-            <Button colorScheme="atropos" type="submit" isLoading={isSubmitting}>
-              {branch ? 'Güncelle' : 'Kaydet'}
-            </Button>
-          </ModalFooter>
-        </form>
-      </ModalContent>
-    </Modal>
-  );
-};
+4.  **Electron Uygulamasını Başlatıp Test Et:**
+    Ana `atropos` dizinindeyken:
 
-export default BranchFormModal;
-```
+    ```cmd
+    pnpm dev
+    ```
+    Backend sunucunuzun sorunsuz çalıştığını ve konsolda `CategoryController` ve `ProductController` rotalarının başarıyla eşleştiğini doğrulayın. Postman veya Insomnia gibi bir API test aracı kullanarak `/categories` ve `/products` endpoint'lerine istekler atarak test edebilirsiniz. (Önce bir şirket ID'nizin olduğundan emin olun.)
 
-**Adım 7.3: Frontend DTO'ları için Senkronizasyon (Opsiyonel ama İyi Uygulama)**
-
-Backend'deki DTO'ları doğrudan frontend'de kullanabilmek için yollarını belirttik (`../../../backend/src/branch/dto/create-branch.dto`). Bu, kod tekrarını önler ve tip güvenliğini artırır. Ancak, frontend'in backend'in `src` dizinine doğrudan bağımlı olması ideal değildir. Gelecekte, backend DTO'larını ayrı bir paylaşılan paket olarak yayınlamak veya her iki tarafın da kullanabileceği merkezi bir DTO/şema tanımı yaklaşımı (örn. monorepo içinde) düşünülmelidir. Şimdilik bu şekilde devam edebiliriz.
-
-**Test Etme Adımları:**
-
-1.  `atropos/backend` dizininde `pnpm run build` komutunu çalıştır (eğer backend'de değişiklik yaptıysan).
-2.  Ana `atropos` dizininde `pnpm dev` komutunu çalıştır.
-
-Uygulama açıldığında:
-*   Dashboard'dan "Şubeler" kartına tıkla.
-*   `BranchesPage`'in yüklendiğini ve eğer varsa şirket ID'sine göre şubeleri listelediğini görmelisin.
-*   "Yeni Şube Ekle" butonuna tıkla. Bir modal açılmalı ve form görünmeli. Formu doldurup kaydetmeyi dene. Validasyon hatalarını kontrol et.
-*   Mevcut bir şubeyi düzenlemek için "Düzenle" butonuna tıkla, formun şube verileriyle dolduğunu gör ve değişiklik yapmayı dene.
-*   Bir şubeyi silmek için "Sil" butonuna tıkla ve onay mekanizmasını gör.
-
-Bu adımlar tamamlandığında bana haber ver. `BranchesPage` artık tam CRUD işlevselliğine sahip olacak ve uygulamanızın ilk gerçek veri yönetim ekranı tamamlanmış olacak!
+Bu adımları tamamladığında bana haber ver. Ardından, frontend'de `CategoriesPage` ve `ProductsPage`'i bu API'larla konuşturarak Kategori ve Ürün yönetimi arayüzlerini oluşturmaya devam edeceğiz.
