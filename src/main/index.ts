@@ -23,9 +23,10 @@ function createWindow(): void {
           "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; " +
           "connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*; " +
           "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-          "style-src 'self' 'unsafe-inline'; " +
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+          "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
           "img-src 'self' data: blob:; " +
-          "font-src 'self' data:;"
+          "font-src 'self' data: https://fonts.gstatic.com;"
         ]
       }
     })
@@ -44,7 +45,8 @@ function createWindow(): void {
       sandbox: false,
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false // Keep this for additional security bypass in development
+      webSecurity: is.dev ? false : true, // Only disable in development
+      allowRunningInsecureContent: false // Explicitly disable insecure content
     }
   })
 
