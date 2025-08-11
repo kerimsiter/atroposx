@@ -11,20 +11,19 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  Button,
+  Button, // MenuButton için kullanılıyor
 } from '@chakra-ui/react';
 import { SettingsIcon, SunIcon, MoonIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import React from 'react';
 
 const Header: React.FC = () => {
   const { colorMode, toggleColorMode } = useColorMode();
-  const bgColor = useColorModeValue('gray.100', 'gray.700');
+  const bgColor = useColorModeValue('white', 'gray.700'); // Header arka planı beyaz veya koyu gri
   const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
 
-  // TODO: Dinamik şube ve kullanıcı bilgileri buraya gelecek
-  const currentBranchName = "Ana Şube";
-  const currentUserName = "Oğuzhan A.";
-  const appName = "Atropos POS System"; // Uygulama adı
+  const currentBranchName = "Ana Şube"; // TODO: Dinamik hale getirilecek
+  const currentUserName = "Oğuzhan A."; // TODO: Dinamik hale getirilecek
+  const appName = "Atropos POS System";
 
   return (
     <Flex
@@ -37,37 +36,49 @@ const Header: React.FC = () => {
       borderColor={useColorModeValue('gray.200', 'gray.600')}
       align="center"
       justify="space-between"
+      boxShadow="sm" // Hafif bir gölge
     >
       {/* Sol Kısım: Logo ve Uygulama Adı */}
-      <HStack spacing={3}>
-        <Box fontSize="2xl" fontWeight="bold">⚡</Box> {/* Basit logo */}
-        <Text fontSize="xl" fontWeight="semibold">{appName}</Text>
+      <HStack spacing={2} ml={2}> {/* Hafifçe sola çek */}
+        <Box fontSize="3xl" color="atropos.500" fontWeight="bold">⚡</Box> {/* Atropos rengi */}
+        <Text fontSize="xl" fontWeight="bold" fontFamily="heading">{appName}</Text> {/* Daha belirgin font */}
       </HStack>
 
       <Spacer />
 
       {/* Sağ Kısım: Şube, Kullanıcı, Tema ve Ayarlar */}
-      <HStack spacing={4}>
-        {/* Şube Seçimi (Şimdilik Sabit) */}
+      <HStack spacing={3} mr={2}> {/* Hafifçe sağa çek */}
+        {/* Şube Seçimi */}
         <Menu>
-          <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="sm">
+          <MenuButton
+            as={Button}
+            rightIcon={<ChevronDownIcon />}
+            variant="ghost" // Daha sade
+            size="sm"
+            fontWeight="normal" // Daha ince font
+          >
             {currentBranchName}
           </MenuButton>
-          <MenuList>
-            {/* TODO: Dinamik şubeler buraya gelecek */}
-            <MenuItem>Şube 1</MenuItem>
-            <MenuItem>Şube 2</MenuItem>
+          <MenuList bg={bgColor} borderColor={useColorModeValue('gray.200', 'gray.600')}>
+            <MenuItem _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}>Şube 1</MenuItem>
+            <MenuItem _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}>Şube 2</MenuItem>
           </MenuList>
         </Menu>
 
-        {/* Kullanıcı Bilgisi (Şimdilik Sabit) */}
+        {/* Kullanıcı Bilgisi */}
         <Menu>
-          <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="sm">
+          <MenuButton
+            as={Button}
+            rightIcon={<ChevronDownIcon />}
+            variant="ghost" // Daha sade
+            size="sm"
+            fontWeight="normal" // Daha ince font
+          >
             {currentUserName}
           </MenuButton>
-          <MenuList>
-            <MenuItem>Profil</MenuItem>
-            <MenuItem>Çıkış Yap</MenuItem>
+          <MenuList bg={bgColor} borderColor={useColorModeValue('gray.200', 'gray.600')}>
+            <MenuItem _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}>Profil</MenuItem>
+            <MenuItem _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}>Çıkış Yap</MenuItem>
           </MenuList>
         </Menu>
 
@@ -78,6 +89,7 @@ const Header: React.FC = () => {
           onClick={toggleColorMode}
           size="sm"
           isRound
+          variant="ghost" // Daha sade
         />
 
         {/* Ayarlar Butonu */}
@@ -86,10 +98,8 @@ const Header: React.FC = () => {
           icon={<SettingsIcon />}
           size="sm"
           isRound
-          onClick={() => {
-            // TODO: Ayarlar sayfasına yönlendirme veya modal açma
-            console.log('Ayarlar açılıyor...');
-          }}
+          variant="ghost" // Daha sade
+          onClick={() => console.log('Ayarlar açılıyor...')}
         />
       </HStack>
     </Flex>

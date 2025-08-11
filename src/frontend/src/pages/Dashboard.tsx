@@ -12,32 +12,35 @@ import {
 } from '@chakra-ui/react';
 import React, { useState, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { FaShoppingCart, FaCashRegister, FaUtensils, FaBoxes, FaUsers, FaChartLine, FaStoreAlt, FaCog } from 'react-icons/fa'; // İkonlar için
+import { FaShoppingCart, FaCashRegister, FaUtensils, FaBoxes, FaUsers, FaChartLine, FaStoreAlt, FaCog, FaLock, FaWifi, FaServer } from 'react-icons/fa'; // İkonlar için
+import { HiOutlineDocumentText } from 'react-icons/hi'; // Başka bir ikon kütüphanesi
+import { BiRestaurant } from 'react-icons/bi'; // Restoran ikonu
+import { MdOutlineFastfood } from 'react-icons/md'; // Fast food ikonu
 
 // Navigasyon kartları için veri
 const menuItems = [
-  { id: 'sales', name: 'SATIŞLAR', icon: FaShoppingCart, path: '/sales', color: 'red.500' },
-  { id: 'cash-register', name: 'KASA', icon: FaCashRegister, path: '/cash-register', color: 'blue.500' },
-  { id: 'products', name: 'ÜRÜNLER', icon: FaUtensils, path: '/products', color: 'green.500' },
-  { id: 'stocks', name: 'STOKLAR', icon: FaBoxes, path: '/stocks', color: 'orange.500' },
-  { id: 'customers', name: 'CARİLER', icon: FaUsers, path: '/customers', color: 'purple.500' },
-  { id: 'reports', name: 'RAPORLAR', icon: FaChartLine, path: '/reports', color: 'teal.500' },
-  { id: 'branches', name: 'ŞUBELER', icon: FaStoreAlt, path: '/branches', color: 'brown.500' },
-  { id: 'settings', name: 'AYARLAR', icon: FaCog, path: '/settings', color: 'gray.600' },
+  { id: 'sales', name: 'SATIŞLAR', icon: FaShoppingCart, path: '/sales', colorKey: 'menuIcons.sales' },
+  { id: 'cash-register', name: 'KASA', icon: FaCashRegister, path: '/cash-register', colorKey: 'menuIcons.cashRegister' },
+  { id: 'products', name: 'ÜRÜNLER', icon: FaUtensils, path: '/products', colorKey: 'menuIcons.products' },
+  { id: 'stocks', name: 'STOKLAR', icon: FaBoxes, path: '/stocks', colorKey: 'menuIcons.stocks' },
+  { id: 'customers', name: 'CARİLER', icon: FaUsers, path: '/customers', colorKey: 'menuIcons.customers' },
+  { id: 'reports', name: 'RAPORLAR', icon: FaChartLine, path: '/reports', colorKey: 'menuIcons.reports' },
+  { id: 'branches', name: 'ŞUBELER', icon: FaStoreAlt, path: '/branches', colorKey: 'menuIcons.branches' },
+  { id: 'settings', name: 'AYARLAR', icon: FaCog, path: '/settings', colorKey: 'menuIcons.settings' },
 ];
 
 const Dashboard: React.FC = () => {
   const cardBgColor = useColorModeValue('white', 'gray.700');
   const cardHoverBgColor = useColorModeValue('gray.50', 'gray.600');
   const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
-  const timeColor = useColorModeValue('gray.700', 'whiteAlpha.800');
+  const subTextColor = useColorModeValue('gray.600', 'gray.400'); // Daha yumuşak alt metin rengi
 
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentDateTime(new Date());
-    }, 1000); // Her saniye günceller
+    }, 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -54,110 +57,135 @@ const Dashboard: React.FC = () => {
     const options: Intl.DateTimeFormatOptions = {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false, // 24 saat formatı
+      hour12: false,
     };
     return date.toLocaleTimeString('tr-TR', options);
   };
 
+  const NotificationCard: React.FC<{ type: string; time: string; colorScheme: string }> = ({ type, time, colorScheme }) => (
+    <Box
+      p={3}
+      bg={useColorModeValue(`${colorScheme}.50`, `${colorScheme}.800`)}
+      borderRadius="md"
+      width="100%"
+      boxShadow="sm"
+      _hover={{ boxShadow: 'md', transform: 'translateY(-1px)' }}
+      transition="all 0.2s ease-in-out"
+    >
+      <Text fontSize="sm" fontWeight="medium" color={useColorModeValue(`${colorScheme}.800`, `${colorScheme}.100`)}>
+        Yeni online sipariş! {type}
+      </Text>
+      <Text fontSize="xs" color={useColorModeValue(`${colorScheme}.600`, `${colorScheme}.300`)}>
+        {time}
+      </Text>
+    </Box>
+  );
 
   return (
-    <Flex height="calc(100vh - 68px)" p={6} pt={0} bg={useColorModeValue('gray.50', 'gray.800')}> {/* Header yüksekliğini düş */}
-      {/* Sol Panel: Tarih ve Saat */}
+    <Flex height="calc(100vh - 68px)" p={6} bg={useColorModeValue('gray.50', 'gray.800')}>
+      {/* Sol Panel: Tarih, Saat, Bildirimler ve Durumlar */}
       <VStack
-        width={{ base: '100%', md: '25%' }}
-        minWidth={{ md: '250px' }} // Sabit genişlik
+        width={{ base: '100%', md: '300px' }} // Sabit, daha şık genişlik
+        minWidth="280px"
         p={6}
         spacing={8}
         align="flex-start"
-        justify="center"
-        bg={useColorModeValue('white', 'gray.900')}
-        borderRadius="lg"
-        shadow="md"
+        bg={useColorModeValue('white', 'gray.700')}
+        borderRadius="xl" // Daha yumuşak köşeler
+        shadow="xl" // Daha belirgin gölge
         mr={6}
-        display={{ base: 'none', md: 'flex' }} // Mobil ve küçük ekranlarda gizle
+        display={{ base: 'none', md: 'flex' }}
+        flexShrink={0} // Küçülmeyi engelle
       >
-        <Text fontSize="2xl" fontWeight="bold" color={textColor}>
-          {formatDate(currentDateTime)}
-        </Text>
-        <Text fontSize="6xl" fontWeight="extrabold" color={timeColor}>
-          {formatTime(currentDateTime)}
-        </Text>
-
-        {/* Bildirimler (Placeholder) */}
-        <VStack align="flex-start" spacing={3} width="100%" mt={8}>
-            <Text fontSize="lg" fontWeight="semibold" color={textColor}>BİLDİRİMLER</Text>
-            {/* TODO: Dinamik bildirimler buraya gelecek */}
-            <Box p={3} bg={useColorModeValue('blue.50', 'blue.800')} borderRadius="md" width="100%">
-                <Text fontSize="sm" fontWeight="medium" color={useColorModeValue('blue.800', 'blue.100')}>Yeni online sipariş! Getir</Text>
-                <Text fontSize="xs" color={useColorModeValue('blue.600', 'blue.300')}>15:27</Text>
-            </Box>
-             <Box p={3} bg={useColorModeValue('green.50', 'green.800')} borderRadius="md" width="100%">
-                <Text fontSize="sm" fontWeight="medium" color={useColorModeValue('green.800', 'green.100')}>Yeni online sipariş! Trendyol</Text>
-                <Text fontSize="xs" color={useColorModeValue('green.600', 'green.300')}>15:32</Text>
-            </Box>
-            <Box p={3} bg={useColorModeValue('purple.50', 'purple.800')} borderRadius="md" width="100%">
-                <Text fontSize="sm" fontWeight="medium" color={useColorModeValue('purple.800', 'purple.100')}>Yeni online sipariş! Yemek Sepeti</Text>
-                <Text fontSize="xs" color={useColorModeValue('purple.600', 'purple.300')}>15:41</Text>
-            </Box>
-            <Button variant="link" colorScheme="blue" size="sm" mt={2} alignSelf="flex-end">
-                Tüm bildirimleri göster →
-            </Button>
+        <VStack align="flex-start" spacing={1} width="100%">
+          <Text fontSize="xl" fontWeight="medium" color={textColor}>
+            {formatDate(currentDateTime)}
+          </Text>
+          <Text fontSize="5xl" fontWeight="extrabold" color={textColor} lineHeight="1.1">
+            {formatTime(currentDateTime)}
+          </Text>
         </VStack>
 
-        <Spacer />
+        {/* Bildirimler */}
+        <VStack align="flex-start" spacing={3} width="100%">
+          <Text fontSize="lg" fontWeight="semibold" color={textColor}>BİLDİRİMLER</Text>
+          <NotificationCard type="Getir" time="15:27" colorScheme="blue" />
+          <NotificationCard type="Trendyol" time="15:32" colorScheme="green" />
+          <NotificationCard type="Yemek Sepeti" time="15:41" colorScheme="purple" />
+          <Button variant="link" colorScheme="atropos" size="sm" mt={2} alignSelf="flex-end" fontWeight="normal">
+            Tüm bildirimleri göster →
+          </Button>
+        </VStack>
 
-        <Button variant="ghost" colorScheme="gray" leftIcon={<Icon as={FaCog} />} mt={8}>
-          Müşteri Hizmetleri
-        </Button>
+        <Spacer /> {/* Durum çubuklarını aşağı it */}
 
-        <Text fontSize="xs" color="gray.500" alignSelf="center">
-            Menulux Pos 1.0 (örnek referans)
-        </Text>
+        {/* Bağlantı Durumları */}
+        <VStack align="flex-start" spacing={2} width="100%" color={subTextColor}>
+          <HStack>
+            <Icon as={FaWifi} color="green.500" />
+            <Text fontSize="sm">İnternet: Bağlı</Text>
+          </HStack>
+          <HStack>
+            <Icon as={FaServer} color="green.500" />
+            <Text fontSize="sm">Sunucu: Bağlı</Text>
+          </HStack>
+        </VStack>
 
-        <HStack width="100%" justifyContent="center" mt={4}>
-          <Box p={2} bg={useColorModeValue('gray.200', 'gray.600')} borderRadius="md">
-            <Icon as={FaCog} />
-          </Box>
-          <Text fontSize="md" fontWeight="bold">Ayarlar</Text>
+        {/* Müşteri Hizmetleri ve Ayarlar */}
+        <HStack width="100%" justifyContent="space-between" pt={4} borderTopWidth="1px" borderColor={useColorModeValue('gray.100', 'gray.600')}>
+          <Button variant="ghost" colorScheme="gray" leftIcon={<Icon as={HiOutlineDocumentText} />} size="sm" fontWeight="normal">
+            Müşteri Hizmetleri
+          </Button>
+          <Button variant="ghost" colorScheme="gray" leftIcon={<Icon as={FaLock} />} size="sm" fontWeight="normal">
+            Kilit
+          </Button>
         </HStack>
+
+        <Text fontSize="xs" color="gray.500" alignSelf="center" mt={2}>
+          Atropos POS v1.0
+        </Text>
       </VStack>
 
-      {/* Sağ Panel: Menü Butonları */}
+      {/* Sağ Panel: Ana Menü Kartları */}
       <SimpleGrid
         flex="1"
-        columns={{ base: 2, sm: 2, md: 3, lg: 4 }}
-        spacing={6}
+        columns={{ base: 2, sm: 2, md: 3, lg: 4 }} // Dokunmatik ekranlar için yeterli büyüklük
+        spacing={6} // Kartlar arası boşluk
         p={6}
-        borderRadius="lg"
-        shadow="md"
-        bg={useColorModeValue('white', 'gray.900')}
+        borderRadius="xl"
+        shadow="xl" // Sol panel ile uyumlu gölge
+        bg={useColorModeValue('white', 'gray.700')}
+        ml={{ base: 0, md: 6 }} // Mobil cihazlarda sol paneli gizlediğimiz için margin kaldırılır
       >
         {menuItems.map((item) => (
-          <Button
+          <Box
             as={RouterLink}
             to={item.path}
             key={item.id}
-            height="150px"
+            p={6}
+            borderRadius="lg"
+            shadow="sm"
+            bg={cardBgColor}
+            transition="all 0.2s ease-in-out"
+            _hover={{
+              transform: 'translateY(-3px)',
+              shadow: 'md',
+              bg: cardHoverBgColor,
+            }}
+            _active={{
+              transform: 'scale(0.98)', // Basıldığında hafif küçülme
+            }}
+            display="flex"
             flexDirection="column"
             justifyContent="center"
             alignItems="center"
             textAlign="center"
-            py={6}
-            px={4}
-            borderRadius="lg"
-            shadow="md"
-            bg={cardBgColor}
-            _hover={{
-              shadow: 'lg',
-              transform: 'translateY(-2px)',
-              transition: 'all 0.2s ease-in-out',
-              bg: cardHoverBgColor,
-            }}
-            transition="all 0.2s ease-in-out"
+            minHeight="160px" // Dokunmatik için uygun yükseklik
+            cursor="pointer"
           >
-            <Icon as={item.icon} boxSize={10} color={item.color} mb={2} />
-            <Text fontSize="lg" fontWeight="semibold" color={textColor}>{item.name}</Text>
-          </Button>
+            <Icon as={item.icon} boxSize={14} color={item.colorKey} mb={3} /> {/* Büyük ikon */}
+            <Text fontSize="xl" fontWeight="bold" color={textColor}>{item.name}</Text> {/* Büyük ve kalın metin */}
+          </Box>
         ))}
       </SimpleGrid>
     </Flex>
