@@ -1,431 +1,632 @@
-Harika, hazırsan hemen başlayalım! Piyasa araştırmandan aldığın geri bildirimler doğrultusunda, **Görev 5: Ana Uygulama Düzeni ve Çoklu Şube Yönetimi Arayüzü (Modern & Dokunmatik Dostu Yaklaşım)**'na başlıyoruz. Bu adımda, uygulamamızın genel UI iskeletini, ana menü/dashboard'u ve temel routing yapısını kuracağız.
+Anladım, "olana kadar devam"! Bu kararlılığın projenin kalitesini en üst seviyeye taşıyacak. Önceki tasarım beklentini karşılamadığı için tekrar özür dilerim. Şimdi, tüm geri bildirimlerini dikkate alarak **Atropos**'un UI/UX'ini "kalıpların dışında, modern, sade, şık ve göze güzel gözüken kurumsal" bir seviyeye taşıyacağız.
+
+Bu adımları dikkatlice uygulayalım:
 
 ---
 
-### Görev 5: Ana Uygulama Düzeni ve Çoklu Şube Yönetimi Arayüzü
+### Görev 5: Ana Uygulama Düzeni ve Çoklu Şube Yönetimi Arayüzü (Premium UI/UX Odaklı Revizyon)
 
-**Adım 5.1: Frontend Routing (React Router) Kurulumu**
+Bu revize edilmiş görevde, mevcut **React Router** ve **NestJS backend** yapısını koruyarak, odak noktamızı tamamen **Chakra UI** kullanarak "Atropos" için özel, göz alıcı ve dokunmatik ekranlara uygun bir kullanıcı arayüzü oluşturmaya çeviriyoruz.
 
-Öncelikle, frontend uygulamanızda sayfalar arası geçişi yönetmek için `react-router-dom` kütüphanesini kuralım. `atropos/src/frontend` dizininde olduğundan emin ol.
+**Adım 5.1: Tema Renklerini ve Global Stilleri İyileştirme**
 
-```cmd
-pnpm add react-router-dom
+Daha sade ve kurumsal bir görünüm için `atropos` renk paletini ve global stilleri biraz daha rafine edeceğiz.
+
+**`atropos/src/frontend/src/theme/index.ts` (Güncellenmiş):**
+```typescript
+import { extendTheme, type ThemeConfig } from '@chakra-ui/react';
+import { mode } from '@chakra-ui/theme-tools'; // mode fonksiyonunu kullanmak için eklendi
+
+const config: ThemeConfig = {
+  initialColorMode: 'system',
+  useSystemColorMode: true,
+};
+
+const theme = extendTheme({
+  config,
+  colors: {
+    // Chakra UI'ın varsayılan renklerini kullanabiliriz
+    // veya kendi kurumsal paletimizi daha minimalist tanımlayabiliriz.
+    // Şimdilik varsayılan gri tonları ve teal/purple gibi vurguları kullanacağız.
+    // Daha sonra markana özel renkleri buraya daha dikkatli yerleştirebiliriz.
+    atropos: { // Özel Atropos vurgu renkleri
+      50: '#E0F2F7', // Çok açık mavi-yeşil
+      100: '#B2EBF2',
+      200: '#80DEEA',
+      300: '#4DD0E1',
+      400: '#26C6DA',
+      500: '#00BCD4', // Ana vurgu rengi (turkuaz benzeri)
+      600: '#00ACC1',
+      700: '#0097A7',
+      800: '#00838F',
+      900: '#006064', // Koyu turkuaz
+    },
+    // Menü ikon renkleri için bazı tanımlamalar yapalım
+    menuIcons: {
+      sales: '#E53E3E',       // Kırmızımsı
+      cashRegister: '#3182CE',  // Mavimsi
+      products: '#38A169',    // Yeşilsi
+      stocks: '#D69E2E',      // Turuncumsu
+      customers: '#805AD5',   // Morumsu
+      reports: '#319795',     // Turkuaz (atropos ile aynı olabilir)
+      branches: '#C05621',    // Kahverengimsi
+      settings: '#4A5568',    // Krivazı gri
+    }
+  },
+  fonts: {
+    body: `'Inter', sans-serif`, // Daha modern bir font (Google Fonts'tan import etmemiz gerekebilir)
+    heading: `'Inter', sans-serif`,
+  },
+  components: {
+    Button: {
+      baseStyle: {
+        fontWeight: 'semibold', // Daha az kalın
+        borderRadius: 'md',
+      },
+      variants: {
+        solid: (props: any) => ({
+          bg: mode('atropos.500', 'atropos.400')(props), // Tema geçişine duyarlı
+          color: 'white',
+          _hover: {
+            bg: mode('atropos.600', 'atropos.500')(props),
+          },
+        }),
+        outline: (props: any) => ({
+          borderColor: mode('gray.300', 'gray.600')(props),
+          color: mode('gray.800', 'whiteAlpha.800')(props),
+          _hover: {
+            bg: mode('gray.100', 'gray.700')(props),
+          },
+        }),
+      },
+    },
+    // Card benzeri kutular için genel stil
+    Card: { // Özel bir bileşen olarak kullanacağız
+      baseStyle: (props: any) => ({
+        p: 6,
+        borderRadius: 'lg',
+        shadow: mode('sm', 'dark-lg')(props), // Daha zarif gölgeler
+        bg: mode('white', 'gray.700')(props),
+        transition: 'all 0.2s ease-in-out',
+        _hover: {
+          transform: 'translateY(-3px)',
+          shadow: mode('md', 'dark-xl')(props),
+        },
+      }),
+    },
+  },
+  styles: {
+    global: (props: any) => ({
+      body: {
+        fontFamily: 'body',
+        color: mode('gray.800', 'whiteAlpha.900')(props),
+        bg: mode('gray.50', 'gray.800')(props), // Arka plan için daha açık gri veya koyu gri
+        lineHeight: 'base',
+      },
+      // Kaydırma çubuğunu gizleyip stil vermek için (isteğe bağlı)
+      '::-webkit-scrollbar': {
+        width: '8px',
+      },
+      '::-webkit-scrollbar-track': {
+        background: mode('gray.100', 'gray.700')(props),
+      },
+      '::-webkit-scrollbar-thumb': {
+        background: mode('gray.300', 'gray.600')(props),
+        borderRadius: '4px',
+      },
+      '::-webkit-scrollbar-thumb:hover': {
+        background: mode('gray.400', 'gray.500')(props),
+      },
+    }),
+  },
+});
+
+export default theme;
+```
+**`theme-tools`** paketini kurmanız gerekebilir:
+```bash
+pnpm add @chakra-ui/theme-tools
+```
+**Google Fonts için `index.html`'e ekleme:**
+`atropos/src/frontend/index.html` dosyasına `<head>` etiketinin içine, `Inter` fontunu çekmek için aşağıdaki satırı ekleyin:
+```html
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">```
+
+**Adım 5.2: Revize Edilmiş `Header.tsx` Bileşeni**
+
+Header'ı daha sade, minimalist ve kurumsal bir görünüme sahip olacak şekilde yeniden tasarlayalım.
+
+**`atropos/src/frontend/src/components/Header.tsx` (Güncellenmiş):**
+```typescript
+import {
+  Box,
+  Flex,
+  Text,
+  IconButton,
+  HStack,
+  Spacer,
+  useColorMode,
+  useColorModeValue,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Button, // MenuButton için kullanılıyor
+} from '@chakra-ui/react';
+import { SettingsIcon, SunIcon, MoonIcon, ChevronDownIcon } from '@chakra-ui/icons';
+import React from 'react';
+
+const Header: React.FC = () => {
+  const { colorMode, toggleColorMode } = useColorMode();
+  const bgColor = useColorModeValue('white', 'gray.700'); // Header arka planı beyaz veya koyu gri
+  const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
+
+  const currentBranchName = "Ana Şube"; // TODO: Dinamik hale getirilecek
+  const currentUserName = "Oğuzhan A."; // TODO: Dinamik hale getirilecek
+  const appName = "Atropos POS System";
+
+  return (
+    <Flex
+      as="header"
+      width="100%"
+      p={4}
+      bg={bgColor}
+      color={textColor}
+      borderBottomWidth="1px"
+      borderColor={useColorModeValue('gray.200', 'gray.600')}
+      align="center"
+      justify="space-between"
+      boxShadow="sm" // Hafif bir gölge
+    >
+      {/* Sol Kısım: Logo ve Uygulama Adı */}
+      <HStack spacing={2} ml={2}> {/* Hafifçe sola çek */}
+        <Box fontSize="3xl" color="atropos.500" fontWeight="bold">⚡</Box> {/* Atropos rengi */}
+        <Text fontSize="xl" fontWeight="bold" fontFamily="heading">{appName}</Text> {/* Daha belirgin font */}
+      </HStack>
+
+      <Spacer />
+
+      {/* Sağ Kısım: Şube, Kullanıcı, Tema ve Ayarlar */}
+      <HStack spacing={3} mr={2}> {/* Hafifçe sağa çek */}
+        {/* Şube Seçimi */}
+        <Menu>
+          <MenuButton
+            as={Button}
+            rightIcon={<ChevronDownIcon />}
+            variant="ghost" // Daha sade
+            size="sm"
+            fontWeight="normal" // Daha ince font
+          >
+            {currentBranchName}
+          </MenuButton>
+          <MenuList bg={bgColor} borderColor={useColorModeValue('gray.200', 'gray.600')}>
+            <MenuItem _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}>Şube 1</MenuItem>
+            <MenuItem _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}>Şube 2</MenuItem>
+          </MenuList>
+        </Menu>
+
+        {/* Kullanıcı Bilgisi */}
+        <Menu>
+          <MenuButton
+            as={Button}
+            rightIcon={<ChevronDownIcon />}
+            variant="ghost" // Daha sade
+            size="sm"
+            fontWeight="normal" // Daha ince font
+          >
+            {currentUserName}
+          </MenuButton>
+          <MenuList bg={bgColor} borderColor={useColorModeValue('gray.200', 'gray.600')}>
+            <MenuItem _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}>Profil</MenuItem>
+            <MenuItem _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}>Çıkış Yap</MenuItem>
+          </MenuList>
+        </Menu>
+
+        {/* Tema Geçiş Butonu */}
+        <IconButton
+          aria-label="Toggle color mode"
+          icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+          onClick={toggleColorMode}
+          size="sm"
+          isRound
+          variant="ghost" // Daha sade
+        />
+
+        {/* Ayarlar Butonu */}
+        <IconButton
+          aria-label="Settings"
+          icon={<SettingsIcon />}
+          size="sm"
+          isRound
+          variant="ghost" // Daha sade
+          onClick={() => console.log('Ayarlar açılıyor...')}
+        />
+      </HStack>
+    </Flex>
+  );
+};
+
+export default Header;
 ```
 
-**Adım 5.2: Temel Layout ve Header Bileşenleri Oluşturma**
+**Adım 5.3: Revize Edilmiş `Dashboard.tsx` Bileşeni**
 
-Şimdi uygulamanızın genel düzenini (`Layout`) ve üst çubuğu (`Header`) oluşturalım.
+Ana menü/dashboard'u daha sade, şık kartlar ve daha düzenli bir sol panel ile yeniden tasarlayalım. `Versions` bileşenini Dashboard'dan çıkarıp `App.tsx`'e geri alacağız, böylece ana statü ekranında kalır ve Dashboard temiz kalır.
 
-1.  **`src/frontend/src/components` Klasörünü Oluştur:**
-    Eğer yoksa, `src\frontend\src` altında `components` adında bir klasör oluştur.
+**`atropos/src/frontend/src/pages/Dashboard.tsx` (Güncellenmiş):**
+```typescript
+import {
+  Box,
+  Text,
+  VStack,
+  HStack,
+  SimpleGrid,
+  Icon,
+  Button,
+  useColorModeValue,
+  Flex,
+} from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
+import { FaShoppingCart, FaCashRegister, FaUtensils, FaBoxes, FaUsers, FaChartLine, FaStoreAlt, FaCog, FaLock, FaWifi, FaServer } from 'react-icons/fa'; // İkonlar için
+import { HiOutlineDocumentText } from 'react-icons/hi'; // Başka bir ikon kütüphanesi
+import { BiRestaurant } from 'react-icons/bi'; // Restoran ikonu
+import { MdOutlineFastfood } from 'react-icons/md'; // Fast food ikonu
 
-    ```cmd
-    mkdir src\frontend\src\components
-    ```
+// Navigasyon kartları için veri
+const menuItems = [
+  { id: 'sales', name: 'SATIŞLAR', icon: FaShoppingCart, path: '/sales', colorKey: 'menuIcons.sales' },
+  { id: 'cash-register', name: 'KASA', icon: FaCashRegister, path: '/cash-register', colorKey: 'menuIcons.cashRegister' },
+  { id: 'products', name: 'ÜRÜNLER', icon: FaUtensils, path: '/products', colorKey: 'menuIcons.products' },
+  { id: 'stocks', name: 'STOKLAR', icon: FaBoxes, path: '/stocks', colorKey: 'menuIcons.stocks' },
+  { id: 'customers', name: 'CARİLER', icon: FaUsers, path: '/customers', colorKey: 'menuIcons.customers' },
+  { id: 'reports', name: 'RAPORLAR', icon: FaChartLine, path: '/reports', colorKey: 'menuIcons.reports' },
+  { id: 'branches', name: 'ŞUBELER', icon: FaStoreAlt, path: '/branches', colorKey: 'menuIcons.branches' },
+  { id: 'settings', name: 'AYARLAR', icon: FaCog, path: '/settings', colorKey: 'menuIcons.settings' },
+];
 
-2.  **`Header.tsx` Bileşenini Oluştur:**
-    Bu bileşen, uygulamanın üst kısmında yer alacak ve logo, şube adı, kullanıcı adı ve tema geçiş düğmesi gibi kurumsal öğeleri içerecek.
+const Dashboard: React.FC = () => {
+  const cardBgColor = useColorModeValue('white', 'gray.700');
+  const cardHoverBgColor = useColorModeValue('gray.50', 'gray.600');
+  const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
+  const subTextColor = useColorModeValue('gray.600', 'gray.400'); // Daha yumuşak alt metin rengi
 
-    **`atropos/src/frontend/src/components/Header.tsx`:**
-    ```typescript
-    import {
-      Box,
-      Flex,
-      Text,
-      IconButton,
-      HStack,
-      Spacer,
-      useColorMode,
-      useColorModeValue,
-      Menu,
-      MenuButton,
-      MenuList,
-      MenuItem,
-    } from '@chakra-ui/react';
-    import { SettingsIcon, SunIcon, MoonIcon, ChevronDownIcon } from '@chakra-ui/icons';
-    import React from 'react';
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
 
-    const Header: React.FC = () => {
-      const { colorMode, toggleColorMode } = useColorMode();
-      const bgColor = useColorModeValue('gray.100', 'gray.700');
-      const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-      // TODO: Dinamik şube ve kullanıcı bilgileri buraya gelecek
-      const currentBranchName = "Ana Şube";
-      const currentUserName = "Oğuzhan A.";
-      const appName = "Atropos POS System"; // Uygulama adı
-
-      return (
-        <Flex
-          as="header"
-          width="100%"
-          p={4}
-          bg={bgColor}
-          color={textColor}
-          borderBottomWidth="1px"
-          borderColor={useColorModeValue('gray.200', 'gray.600')}
-          align="center"
-          justify="space-between"
-        >
-          {/* Sol Kısım: Logo ve Uygulama Adı */}
-          <HStack spacing={3}>
-            <Box fontSize="2xl" fontWeight="bold">⚡</Box> {/* Basit logo */}
-            <Text fontSize="xl" fontWeight="semibold">{appName}</Text>
-          </HStack>
-
-          <Spacer />
-
-          {/* Sağ Kısım: Şube, Kullanıcı, Tema ve Ayarlar */}
-          <HStack spacing={4}>
-            {/* Şube Seçimi (Şimdilik Sabit) */}
-            <Menu>
-              <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="sm">
-                {currentBranchName}
-              </MenuButton>
-              <MenuList>
-                {/* TODO: Dinamik şubeler buraya gelecek */}
-                <MenuItem>Şube 1</MenuItem>
-                <MenuItem>Şube 2</MenuItem>
-              </MenuList>
-            </Menu>
-
-            {/* Kullanıcı Bilgisi (Şimdilik Sabit) */}
-            <Menu>
-              <MenuButton as={Button} rightIcon={<ChevronDownIcon />} size="sm">
-                {currentUserName}
-              </MenuButton>
-              <MenuList>
-                <MenuItem>Profil</MenuItem>
-                <MenuItem>Çıkış Yap</MenuItem>
-              </MenuList>
-            </Menu>
-
-            {/* Tema Geçiş Butonu */}
-            <IconButton
-              aria-label="Toggle color mode"
-              icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
-              onClick={toggleColorMode}
-              size="sm"
-              isRound
-            />
-
-            {/* Ayarlar Butonu */}
-            <IconButton
-              aria-label="Settings"
-              icon={<SettingsIcon />}
-              size="sm"
-              isRound
-              onClick={() => {
-                // TODO: Ayarlar sayfasına yönlendirme veya modal açma
-                console.log('Ayarlar açılıyor...');
-              }}
-            />
-          </HStack>
-        </Flex>
-      );
+  const formatDate = (date: Date) => {
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
     };
+    return date.toLocaleDateString('tr-TR', options);
+  };
 
-    export default Header;
-    ```
-
-3.  **`Layout.tsx` Bileşenini Oluştur:**
-    Bu bileşen, `Header`'ı içerecek ve uygulamanın tüm sayfalarını sarmalayacak genel bir düzen sağlayacak.
-
-    **`atropos/src/frontend/src/components/Layout.tsx`:**
-    ```typescript
-    import { Box, Flex } from '@chakra-ui/react';
-    import React from 'react';
-    import Header from './Header'; // Header bileşenini import et
-
-    interface LayoutProps {
-      children: React.ReactNode;
-    }
-
-    const Layout: React.FC<LayoutProps> = ({ children }) => {
-      return (
-        <Flex direction="column" minH="100vh">
-          <Header /> {/* Üst çubuk */}
-          <Box as="main" flex="1" p={0}> {/* Ana içerik alanı, p=0 ile padding'i kaldır */}
-            {children}
-          </Box>
-        </Flex>
-      );
+  const formatTime = (date: Date) => {
+    const options: Intl.DateTimeFormatOptions = {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
     };
+    return date.toLocaleTimeString('tr-TR', options);
+  };
 
-    export default Layout;
-    ```
+  const NotificationCard: React.FC<{ type: string; time: string; colorScheme: string }> = ({ type, time, colorScheme }) => (
+    <Box
+      p={3}
+      bg={useColorModeValue(`${colorScheme}.50`, `${colorScheme}.800`)}
+      borderRadius="md"
+      width="100%"
+      boxShadow="sm"
+      _hover={{ boxShadow: 'md', transform: 'translateY(-1px)' }}
+      transition="all 0.2s ease-in-out"
+    >
+      <Text fontSize="sm" fontWeight="medium" color={useColorModeValue(`${colorScheme}.800`, `${colorScheme}.100`)}>
+        Yeni online sipariş! {type}
+      </Text>
+      <Text fontSize="xs" color={useColorModeValue(`${colorScheme}.600`, `${colorScheme}.300`)}>
+        {time}
+      </Text>
+    </Box>
+  );
 
-**Adım 5.3: Ana Dashboard Bileşeni Oluşturma**
-
-Ana menü veya dashboard sayfası, büyük dokunmatik dostu butonlarla modüllere hızlı erişim sağlayacak.
-
-1.  **`src/frontend/src/pages` Klasörünü Oluştur:**
-    Eğer yoksa, `src\frontend\src` altında `pages` adında bir klasör oluştur.
-
-    ```cmd
-    mkdir src\frontend\src\pages
-    ```
-
-2.  **`Dashboard.tsx` Bileşenini Oluştur:**
-    Bu, uygulamanın ana ekranı olacak.
-
-    **`atropos/src/frontend/src/pages/Dashboard.tsx`:**
-    ```typescript
-    import {
-      Box,
-      Text,
-      VStack,
-      HStack,
-      SimpleGrid,
-      Icon,
-      Button,
-      useColorModeValue,
-    } from '@chakra-ui/react';
-    import React, { useState, useEffect } from 'react';
-    import { Link as RouterLink } from 'react-router-dom';
-    import { FaShoppingCart, FaCashRegister, FaUtensils, FaBoxes, FaUsers, FaChartLine, FaStoreAlt, FaCog } from 'react-icons/fa'; // İkonlar için
-
-    // Navigasyon kartları için veri
-    const menuItems = [
-      { id: 'sales', name: 'SATIŞLAR', icon: FaShoppingCart, path: '/sales', color: 'red.500' },
-      { id: 'cash-register', name: 'KASA', icon: FaCashRegister, path: '/cash-register', color: 'blue.500' },
-      { id: 'products', name: 'ÜRÜNLER', icon: FaUtensils, path: '/products', color: 'green.500' },
-      { id: 'stocks', name: 'STOKLAR', icon: FaBoxes, path: '/stocks', color: 'orange.500' },
-      { id: 'customers', name: 'CARİLER', icon: FaUsers, path: '/customers', color: 'purple.500' },
-      { id: 'reports', name: 'RAPORLAR', icon: FaChartLine, path: '/reports', color: 'teal.500' },
-      { id: 'branches', name: 'ŞUBELER', icon: FaStoreAlt, path: '/branches', color: 'brown.500' },
-      { id: 'settings', name: 'AYARLAR', icon: FaCog, path: '/settings', color: 'gray.600' },
-    ];
-
-    const Dashboard: React.FC = () => {
-      const cardBgColor = useColorModeValue('white', 'gray.700');
-      const cardHoverBgColor = useColorModeValue('gray.50', 'gray.600');
-      const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
-      const timeColor = useColorModeValue('gray.700', 'whiteAlpha.800');
-
-      const [currentDateTime, setCurrentDateTime] = useState(new Date());
-
-      useEffect(() => {
-        const timer = setInterval(() => {
-          setCurrentDateTime(new Date());
-        }, 1000); // Her saniye günceller
-        return () => clearInterval(timer);
-      }, []);
-
-      const formatDate = (date: Date) => {
-        const options: Intl.DateTimeFormatOptions = {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-        };
-        return date.toLocaleDateString('tr-TR', options);
-      };
-
-      const formatTime = (date: Date) => {
-        const options: Intl.DateTimeFormatOptions = {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false, // 24 saat formatı
-        };
-        return date.toLocaleTimeString('tr-TR', options);
-      };
-
-
-      return (
-        <Flex height="calc(100vh - 68px)" p={6} pt={0} bg={useColorModeValue('gray.50', 'gray.800')}> {/* Header yüksekliğini düş */}
-          {/* Sol Panel: Tarih ve Saat */}
-          <VStack
-            width={{ base: '100%', md: '25%' }}
-            minWidth={{ md: '250px' }} // Sabit genişlik
-            p={6}
-            spacing={8}
-            align="flex-start"
-            justify="center"
-            bg={useColorModeValue('white', 'gray.900')}
-            borderRadius="lg"
-            shadow="md"
-            mr={6}
-            display={{ base: 'none', md: 'flex' }} // Mobil ve küçük ekranlarda gizle
-          >
-            <Text fontSize="2xl" fontWeight="bold" color={textColor}>
-              {formatDate(currentDateTime)}
-            </Text>
-            <Text fontSize="6xl" fontWeight="extrabold" color={timeColor}>
-              {formatTime(currentDateTime)}
-            </Text>
-
-            {/* Bildirimler (Placeholder) */}
-            <VStack align="flex-start" spacing={3} width="100%" mt={8}>
-                <Text fontSize="lg" fontWeight="semibold" color={textColor}>BİLDİRİMLER</Text>
-                {/* TODO: Dinamik bildirimler buraya gelecek */}
-                <Box p={3} bg={useColorModeValue('blue.50', 'blue.800')} borderRadius="md" width="100%">
-                    <Text fontSize="sm" fontWeight="medium" color={useColorModeValue('blue.800', 'blue.100')}>Yeni online sipariş! Getir</Text>
-                    <Text fontSize="xs" color={useColorModeValue('blue.600', 'blue.300')}>15:27</Text>
-                </Box>
-                 <Box p={3} bg={useColorModeValue('green.50', 'green.800')} borderRadius="md" width="100%">
-                    <Text fontSize="sm" fontWeight="medium" color={useColorModeValue('green.800', 'green.100')}>Yeni online sipariş! Trendyol</Text>
-                    <Text fontSize="xs" color={useColorModeValue('green.600', 'green.300')}>15:32</Text>
-                </Box>
-                <Box p={3} bg={useColorModeValue('purple.50', 'purple.800')} borderRadius="md" width="100%">
-                    <Text fontSize="sm" fontWeight="medium" color={useColorModeValue('purple.800', 'purple.100')}>Yeni online sipariş! Yemek Sepeti</Text>
-                    <Text fontSize="xs" color={useColorModeValue('purple.600', 'purple.300')}>15:41</Text>
-                </Box>
-                <Button variant="link" colorScheme="blue" size="sm" mt={2} alignSelf="flex-end">
-                    Tüm bildirimleri göster →
-                </Button>
-            </VStack>
-
-            <Spacer />
-
-            <Button variant="ghost" colorScheme="gray" leftIcon={<Icon as={FaCog} />} mt={8}>
-              Müşteri Hizmetleri
-            </Button>
-
-            <Text fontSize="xs" color="gray.500" alignSelf="center">
-                Menulux Pos 1.0 (örnek referans)
-            </Text>
-
-            <HStack width="100%" justifyContent="center" mt={4}>
-              <Box p={2} bg={useColorModeValue('gray.200', 'gray.600')} borderRadius="md">
-                <Icon as={FaCog} />
-              </Box>
-              <Text fontSize="md" fontWeight="bold">Ayarlar</Text>
-            </HStack>
-          </VStack>
-
-          {/* Sağ Panel: Menü Butonları */}
-          <SimpleGrid
-            flex="1"
-            columns={{ base: 2, sm: 2, md: 3, lg: 4 }}
-            spacing={6}
-            p={6}
-            borderRadius="lg"
-            shadow="md"
-            bg={useColorModeValue('white', 'gray.900')}
-          >
-            {menuItems.map((item) => (
-              <Button
-                as={RouterLink}
-                to={item.path}
-                key={item.id}
-                height="150px"
-                flexDirection="column"
-                justifyContent="center"
-                alignItems="center"
-                textAlign="center"
-                py={6}
-                px={4}
-                borderRadius="lg"
-                shadow="md"
-                bg={cardBgColor}
-                _hover={{
-                  shadow: 'lg',
-                  transform: 'translateY(-2px)',
-                  transition: 'all 0.2s ease-in-out',
-                  bg: cardHoverBgColor,
-                }}
-                transition="all 0.2s ease-in-out"
-              >
-                <Icon as={item.icon} boxSize={10} color={item.color} mb={2} />
-                <Text fontSize="lg" fontWeight="semibold" color={textColor}>{item.name}</Text>
-              </Button>
-            ))}
-          </SimpleGrid>
-        </Flex>
-      );
-    };
-
-    export default Dashboard;
-    ```
-    `react-icons` paketini yüklememiz gerekiyor:
-
-    ```cmd
-    pnpm add react-icons
-    ```
-    Bu Dashboard bileşeni, dokunmatik ekranlar için uygun, büyük ve ikonik butonlar ile ana modüllere yönlendirme sağlayacak. Sol panelde tarih ve saat gibi anlık bilgiler yer alacak, sağ panel ise modül kartlarını içerecek.
-
-**Adım 5.4: `App.tsx`'i Güncelleme ve Routing Yapısını Kurma**
-
-Şimdi `App.tsx` dosyasını temizleyip `React Router`'ı ve oluşturduğumuz `Layout` ile `Dashboard` bileşenlerini entegre edelim.
-
-1.  **`src/frontend/src/App.css` Dosyasını Temizle:**
-    Bu dosyanın içeriğini tamamen boşalt veya sil. Chakra UI kendi stil sistemini kullanacağı için varsayılan CSS'e ihtiyacımız yok.
-
-2.  **`App.tsx`'i Güncelle:**
-    Ana uygulama mantığını ve router'ı bu dosyada tanımlayacağız. `App.tsx` artık temel bir router yapılandırması sunacak.
-
-    **`atropos/src/frontend/src/App.tsx`:**
-    ```typescript
-    import React from 'react';
-    import { BrowserRouter, Routes, Route } from 'react-router-dom';
-    import Layout from './components/Layout'; // Layout bileşenini import et
-    import Dashboard from './pages/Dashboard'; // Dashboard bileşenini import et
-    import BranchesPage from './pages/BranchesPage'; // Şubeler sayfası için placeholder
-
-    // İlk kurulumdaki ana sayfa içeriğini kaldırıyoruz
-    // import Versions from './components/Versions'; // Eğer Versions'ı Dashboard'a taşımadıysan, burada tutabilirsin veya silebilirsin.
-    // import logo from './assets/electron.svg';
-
-    function App(): React.JSX.Element {
-      // Backend bağlantı ve şirket çekme mantığı kaldırıldı, artık Dashboard'a yerleşebilir
-      // veya daha global bir state yönetimi ile yapılabilir.
-      // Şimdilik sadece routing üzerine odaklanıyoruz.
-
-      return (
-        <BrowserRouter>
-          <Layout> {/* Tüm rotaları Layout içinde sarmalıyoruz */}
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/branches" element={<BranchesPage />} /> {/* Şubeler sayfası rotası */}
-              {/* Diğer sayfalar için rotalar buraya eklenecek */}
-            </Routes>
-          </Layout>
-        </BrowserRouter>
-      );
-    }
-
-    export default App;
-    ```
-
-3.  **`BranchesPage.tsx` için Placeholder Oluştur:**
-    `src/frontend/src/pages` klasörünün altına `BranchesPage.tsx` adında şimdilik basit bir dosya oluşturalım.
-
-    **`atropos/src/frontend/src/pages/BranchesPage.tsx`:**
-    ```typescript
-    import { Box, Heading, Text, VStack, useColorModeValue } from '@chakra-ui/react';
-    import React from 'react';
-
-    const BranchesPage: React.FC = () => {
-      const bgColor = useColorModeValue('white', 'gray.700');
-      const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
-
-      return (
-        <VStack p={6} align="flex-start" bg={useColorModeValue('gray.50', 'gray.800')} minH="calc(100vh - 68px)">
-          <Box
-            p={5}
-            shadow="md"
-            borderWidth="1px"
-            borderRadius="lg"
-            bg={bgColor}
-            color={textColor}
-            width="100%"
-          >
-            <Heading mb={4}>Şubeler Yönetimi</Heading>
-            <Text>Bu sayfa, çoklu şube yönetimi arayüzünü içerecektir.</Text>
-            {/* TODO: Şube listesi, ekleme/düzenleme formları buraya gelecek */}
-          </Box>
+  return (
+    <Flex height="calc(100vh - 68px)" p={6} bg={useColorModeValue('gray.50', 'gray.800')}>
+      {/* Sol Panel: Tarih, Saat, Bildirimler ve Durumlar */}
+      <VStack
+        width={{ base: '100%', md: '300px' }} // Sabit, daha şık genişlik
+        minWidth="280px"
+        p={6}
+        spacing={8}
+        align="flex-start"
+        bg={useColorModeValue('white', 'gray.700')}
+        borderRadius="xl" // Daha yumuşak köşeler
+        shadow="xl" // Daha belirgin gölge
+        mr={6}
+        display={{ base: 'none', md: 'flex' }}
+        flexShrink={0} // Küçülmeyi engelle
+      >
+        <VStack align="flex-start" spacing={1} width="100%">
+          <Text fontSize="xl" fontWeight="medium" color={textColor}>
+            {formatDate(currentDateTime)}
+          </Text>
+          <Text fontSize="5xl" fontWeight="extrabold" color={textColor} lineHeight="1.1">
+            {formatTime(currentDateTime)}
+          </Text>
         </VStack>
-      );
-    };
 
-    export default BranchesPage;
-    ```
+        {/* Bildirimler */}
+        <VStack align="flex-start" spacing={3} width="100%">
+          <Text fontSize="lg" fontWeight="semibold" color={textColor}>BİLDİRİMLER</Text>
+          <NotificationCard type="Getir" time="15:27" colorScheme="blue" />
+          <NotificationCard type="Trendyol" time="15:32" colorScheme="green" />
+          <NotificationCard type="Yemek Sepeti" time="15:41" colorScheme="purple" />
+          <Button variant="link" colorScheme="atropos" size="sm" mt={2} alignSelf="flex-end" fontWeight="normal">
+            Tüm bildirimleri göster →
+          </Button>
+        </VStack>
+
+        <Spacer /> {/* Durum çubuklarını aşağı it */}
+
+        {/* Bağlantı Durumları */}
+        <VStack align="flex-start" spacing={2} width="100%" color={subTextColor}>
+          <HStack>
+            <Icon as={FaWifi} color="green.500" />
+            <Text fontSize="sm">İnternet: Bağlı</Text>
+          </HStack>
+          <HStack>
+            <Icon as={FaServer} color="green.500" />
+            <Text fontSize="sm">Sunucu: Bağlı</Text>
+          </HStack>
+        </VStack>
+
+        {/* Müşteri Hizmetleri ve Ayarlar */}
+        <HStack width="100%" justifyContent="space-between" pt={4} borderTopWidth="1px" borderColor={useColorModeValue('gray.100', 'gray.600')}>
+          <Button variant="ghost" colorScheme="gray" leftIcon={<Icon as={HiOutlineDocumentText} />} size="sm" fontWeight="normal">
+            Müşteri Hizmetleri
+          </Button>
+          <Button variant="ghost" colorScheme="gray" leftIcon={<Icon as={FaLock} />} size="sm" fontWeight="normal">
+            Kilit
+          </Button>
+        </HStack>
+
+        <Text fontSize="xs" color="gray.500" alignSelf="center" mt={2}>
+          Atropos POS v1.0
+        </Text>
+      </VStack>
+
+      {/* Sağ Panel: Ana Menü Kartları */}
+      <SimpleGrid
+        flex="1"
+        columns={{ base: 2, sm: 2, md: 3, lg: 4 }} // Dokunmatik ekranlar için yeterli büyüklük
+        spacing={6} // Kartlar arası boşluk
+        p={6}
+        borderRadius="xl"
+        shadow="xl" // Sol panel ile uyumlu gölge
+        bg={useColorModeValue('white', 'gray.700')}
+        ml={{ base: 0, md: 6 }} // Mobil cihazlarda sol paneli gizlediğimiz için margin kaldırılır
+      >
+        {menuItems.map((item) => (
+          <Box
+            as={RouterLink}
+            to={item.path}
+            key={item.id}
+            sx={{
+                ...theme.components.Card.baseStyle(useColorModeValue({},{})), // Tema'dan Card stilini kullan
+                display: 'flex', // Box'ı esnek kutu yap
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                textAlign: 'center',
+                minHeight: '160px', // Dokunmatik için uygun yükseklik
+                cursor: 'pointer',
+                _hover: theme.components.Card.baseStyle(useColorModeValue({},{}))._hover, // Hover efektlerini de al
+            }}
+            _active={{
+              transform: 'scale(0.98)', // Basıldığında hafif küçülme
+            }}
+          >
+            <Icon as={item.icon} boxSize={14} color={item.colorKey} mb={3} /> {/* Büyük ikon */}
+            <Text fontSize="xl" fontWeight="bold" color={textColor}>{item.name}</Text> {/* Büyük ve kalın metin */}
+          </Box>
+        ))}
+      </SimpleGrid>
+    </Flex>
+  );
+};
+
+export default Dashboard;
+```
+**Yeni Bağımlılıklar (ikonlar için):**
+`react-icons` paketine ek olarak birkaç ikon kütüphanesi daha ekledim.
+```bash
+pnpm add react-icons @chakra-ui/icons```
+
+**Adım 5.4: `App.tsx`'i Güncelleme ve Routing Yapısını Koruma**
+
+`App.tsx`'i yeniden düzenleyerek `Versions` bileşenini tekrar buraya alalım, böylece dashboard daha temiz kalır ve genel app seviyesi bilgiler App.tsx'te olur. Ayrıca backend bağlantı kontrolünü de buraya geri taşıyabiliriz, böylece uygulamanın ana yükleme ekranı olarak da kullanılabilir.
+
+**`atropos/src/frontend/src/App.tsx` (Güncellenmiş):**
+```typescript
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
+import BranchesPage from './pages/BranchesPage';
+import {
+  Box,
+  Text,
+  VStack,
+  HStack,
+  Spinner,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  useColorModeValue,
+} from '@chakra-ui/react';
+
+// Versions bileşeni artık App.tsx içinde
+const Versions: React.FC = () => {
+  const [versions, setVersions] = useState<{ [key: string]: string } | null>(null);
+  const textColor = useColorModeValue('gray.600', 'gray.400');
+
+  useEffect(() => {
+    if (window.electron && window.electron.process && window.electron.ipcRenderer) {
+      const getVersions = async () => {
+        try {
+          const chrome = await window.electron.ipcRenderer.invoke('get-chrome-version');
+          const electron = await window.electron.ipcRenderer.invoke('get-electron-version');
+          const node = await window.electron.ipcRenderer.invoke('get-node-version');
+          setVersions({ chrome, electron, node });
+        } catch (error) {
+          console.error("Failed to get versions from main process:", error);
+        }
+      };
+      getVersions();
+    }
+  }, []);
+
+  return (
+    <HStack spacing={4} fontSize="sm" color={textColor} mt={4}>
+      {versions ? (
+        <>
+          <Text>Electron v{versions.electron}</Text>
+          <Text>Chromium v{versions.chrome}</Text>
+          <Text>Node v{versions.node}</Text>
+        </>
+      ) : (
+        <Text>Sürümler yükleniyor...</Text>
+      )}
+    </HStack>
+  );
+};
+
+
+function App(): React.JSX.Element {
+  const [backendUrl, setBackendUrl] = useState<string | null>(null);
+  const [companies, setCompanies] = useState<any[]>([]); // Sadece bağlantı testi için
+  const [statusMessage, setStatusMessage] = useState('Backend API URL alınıyor...');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const textColor = useColorModeValue('gray.800', 'whiteAlpha.900');
+
+  useEffect(() => {
+    window.api.getNestApiUrl().then((url) => {
+      setBackendUrl(url);
+      setStatusMessage(`NestJS API URL: ${url}`);
+    }).catch((err) => {
+      setStatusMessage(`API URL alınamadı: ${err.message}`);
+      console.error(err);
+      setIsLoading(false);
+      setIsError(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (backendUrl) {
+      const fetchCompanies = async () => {
+        try {
+          const response = await fetch(`${backendUrl}/company`);
+          if (!response.ok) {
+            throw new Error(`HTTP hatası! Durum: ${response.status}`);
+          }
+          const data = await response.json();
+          setCompanies(data);
+          setStatusMessage('Backend bağlantısı başarılı! Şirketler yüklendi.');
+          setIsLoading(false);
+          setIsError(false);
+        } catch (error: any) {
+          setStatusMessage(`Backend bağlantı hatası: ${error.message}`);
+          console.error('Şirketler çekilirken hata oluştu:', error);
+          setIsLoading(false);
+          setIsError(true);
+        }
+      };
+      setTimeout(fetchCompanies, 2000);
+    }
+  }, [backendUrl]);
+
+
+  // Eğer backend bağlantısı hala kontrol ediliyorsa veya hata varsa yükleme ekranını göster
+  if (isLoading || isError) {
+    return (
+      <VStack p={8} spacing={6} align="center" justify="center" minH="100vh" bg={bgColor}>
+        <Box fontSize="5xl" mb={4} color="atropos.500">⚡</Box>
+        <Text fontSize="2xl" fontWeight="bold" color={textColor}>Atropos POS System</Text>
+        
+        <Box
+          p={5}
+          shadow="md"
+          borderWidth="1px"
+          borderRadius="lg"
+          bg={useColorModeValue('white', 'gray.700')}
+          color={textColor}
+          width={{ base: '90%', md: '600px' }}
+        >
+          <Text fontSize="xl" fontWeight="semibold" mb={3}>Backend Durumu</Text>
+          {isLoading ? (
+            <HStack justifyContent="center">
+              <Spinner size="md" color="atropos.500" />
+              <Text>{statusMessage}</Text>
+            </HStack>
+          ) : (
+            <Alert status="error">
+              <AlertIcon />
+              <AlertTitle mr={2}>Bağlantı Hatası!</AlertTitle>
+              <AlertDescription>{statusMessage}</AlertDescription>
+            </Alert>
+          )}
+
+          {companies.length > 0 && ( // Şirketleri sadece bağlantı başarılıysa göster
+            <Box mt={4}>
+              <Text fontSize="lg" fontWeight="semibold">Veritabanındaki Şirketler:</Text>
+              <VStack as="ul" align="flex-start" mt={2} spacing={1}>
+                {companies.map((company) => (
+                  <Text as="li" key={company.id}>
+                    <Text as="span" fontWeight="bold">{company.name}</Text> (Vergi No: {company.taxNumber})
+                  </Text>
+                ))}
+              </VStack>
+            </Box>
+          )}
+        </Box>
+        <Versions /> {/* Sürüm bilgileri */}
+      </VStack>
+    );
+  }
+
+  // Bağlantı başarılıysa ana uygulamayı göster
+  return (
+    <BrowserRouter>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/branches" element={<BranchesPage />} />
+          {/* Diğer sayfalar için rotalar buraya eklenecek */}
+          {/* Hızlı Satış, Ürünler, Stoklar, Cariler, Raporlar, Ayarlar vb. */}
+        </Routes>
+      </Layout>
+    </BrowserRouter>
+  );
+}
+
+export default App;
+```
 
 **Test Etme Adımları:**
 
-1.  `atropos/backend` dizininde `pnpm run build` komutunu çalıştır (eğer backend'de değişiklik yaptıysan).
+1.  `atropos/backend` dizininde `pnpm run build` komutunu çalıştır (backend'de değişiklik yaptıysan).
 2.  Ana `atropos` dizininde `pnpm dev` komutunu çalıştır.
 
-Uygulama başladığında, yeni tasarladığımız Header ve Dashboard ekranını görmelisin. Dashboard'daki "Şubeler" butonuna tıklayarak `BranchesPage`'e geçiş yapabildiğini kontrol et.
+Uygulama açıldığında, artık daha minimalist ve şık bir yükleme ekranı (App.tsx'ten) görmelisin. Bağlantı başarılı olduğunda, Dashboard'a geçecek ve burada daha önce istediğin "modern, sade, şık ve kurumsal" görünüme sahip bir ana menü seni karşılayacak. Sağ üstteki tema değiştirme butonu ve Dashboard'daki kartların hover/active efektlerini incele.
 
-Bu adımla birlikte, uygulamanızın modern, dokunmatik dostu ana ekranı ve temel navigasyon yapısı kurulmuş olacak. Bu adımı tamamladığında bana haber ver. Sonraki adımda, NestJS backend'inde `Branch` modülünü tamamlayacağız ve ardından frontend'deki `BranchesPage`'i gerçek veriyle doldurup CRUD işlevlerini ekleyeceğiz.
+Bu revizyonlar, Atropos'un ilk izlenimini ve kullanıcı deneyimini önemli ölçüde artırmalı. Bu adımı tamamladığında bana haber ver. Ardından, NestJS backend'inde `Branch` modülünü tamamlayacağız (eğer eksikleri varsa) ve frontend'deki `BranchesPage`'i gerçek veriyle doldurup CRUD işlevlerini ekleyeceğiz.
